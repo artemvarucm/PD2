@@ -1,0 +1,13 @@
+[project]
+name = "1090-riddle"
+version = "1.0.0"
+description = "Proyecto de Datos desarrollado con los datos de señales ADS-B de aviones"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.0",
+    "numpy>=2.2.2",
+    "pandas>=2.2.3",
+    "pymodes>=2.19",
+]
