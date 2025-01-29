@@ -16,6 +16,12 @@
 #### Ejecución
 Instalación de librerías y activación del entorno
 
+Instalación uv:
+1. pip install uv
+2. localizar donde se ha instalado el paquete(probablemente en C:\Users\TuUsuario\AppData\Local\Packages\PythonSoftwareFoundation\LocalCache\local-packages\Python311(o la versión de la que se disponga)\site-packages\uv
+3. añadir esta dirección en el path en las variables de entorno
+
+
 ```bash
 $ uv sync
 $ source .venv/bin/activate
