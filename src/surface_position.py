@@ -16,7 +16,7 @@ def getSurfacePosition(hex):
 Devuelve LA LATITUD Y LONGITUD DEL AVIÓN EN FUNCIÓN DEL RADAR
 """
 
-def surfacePos(msg, ref_lat, ref_lon):
+def getSurfacePos(msg, ref_lat, ref_lon):
     lat, lon = pms.adsb.position_with_ref(msg, ref_lat, ref_lon)
     return lat, lon
 
