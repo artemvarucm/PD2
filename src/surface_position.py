@@ -1,3 +1,6 @@
+rad_lat = 40.51
+rad_lon = -3.53
+
 """
 TC: ENTRE 5 y 8
 """
@@ -37,3 +40,11 @@ def getMovement(speedValue):
         return 'MAX (v >= 175 kt)'
     else:
         return 'RESERVED'
+
+"""
+D  evuelve LA LATITUD Y LONGITUD DEL AVIÓN EN FUNCIÓN DEL RADAR
+"""
+
+def surfacePos(msg, ref_lat, ref_lon):
+    lat, lon = pms.adsb.position_with_ref(msg, ref_lat, ref_lon)
+    return lat, lon
