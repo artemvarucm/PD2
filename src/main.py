@@ -3,6 +3,7 @@ import base64
 import pyModeS as pms
 import time
 from surface_position import SurfacePositionMessage
+from airborne_position import AirbornePositionMessage
 
 """
 Recorre fila por fila el dataFrame para devolver un df
@@ -37,13 +38,15 @@ def merge(path, new_path):
         "airborne_pos_single_antenna_flag",
         "airborne_pos_time",
         "airborne_pos_altitude_type",
+        "airborne_pos_lat",
+        "airborne_pos_lon",
         "airborne_pos_CPR",
         "airborne_pos_surveillance_status"
     ]
 
     # IMPORTANTE: Contiene la lista con todos los tipos de mensajes, para poder comprobar
     # si el mensaje pertenece a ese tipo y ejecutar la logica correspondiente
-    messagesTypes = [SurfacePositionMessage()]
+    messagesTypes = [SurfacePositionMessage(), AirbornePositionMessage()]
 
     # Guarda el ultimo estado de atributos avion
     # (la clave seria ICAO, el valor seria otro diccionario con los valores para todas las columnas)

@@ -1,6 +1,5 @@
 import pyModeS as pms
 from message_type import MessageType
-import base64
 
 class AirbornePositionMessage(MessageType):
     def __init__(self):
@@ -8,11 +7,16 @@ class AirbornePositionMessage(MessageType):
         self.RAD_LAT = 40.51
         self.RAD_LON = -3.53
 
+        # DECODERS 
+        self.surveillance_status_decoder = {0: "no_condition", 1: "permanent_alert", 2: "temporary_alert", 3: "SPI_condition"}
+        self.CPR_decoder = {0: "even_frame", 1: "odd_frame"}
+
+
     def match(self, typecode):
         return (typecode >= 9 and typecode <= 18) or (typecode >= 20 and typecode <= 22)
 
-    def encodeHex(self, b64):
-        return base64.b64decode(b64).hex()
+    def get_typecode(msg):
+        return pms.common.typecode(msg)
 
     def hex2bin(self, msg):
         return pms.common.hex2bin(msg)
@@ -39,28 +43,28 @@ class AirbornePositionMessage(MessageType):
         return msg_time_bin
 
     def getCPRFormat(self, msg_bin):
-        decoder = {0: "even_frame", 1: "odd_frame"}
         bit_time = 21
         msg_CPR_bin = msg_bin[bit_time]
-        msg_CPR = bin2int(msg_CPR_bin)
-        return decoder[msg_CPR]
+        msg_CPR = self.bin2int(msg_CPR_bin)
+        return self.CPR_decoder[msg_CPR]
 
     def getSurveillanceStatus(self, msg_bin):
-        decoder = {0: "no_condition", 1: "permanent_alert", 2: "temporary_alert", 3: "SPI_condition"}
-
         msg_status_bin = msg_bin[5:7]
-
-        msg_status_int = bin2int(msg_status_bin)
-
-        return decoder[msg_status_int]
+        msg_status_int = self.bin2int(msg_status_bin)
+        return self.surveillance_status_decoder[msg_status_int]
     
-    """
-    def updateRowFromHex(self, self, row, hex):
-        speed, trk, vertical_speed, tag = pms.adsb.velocity(hex)
-        lat, lon = self.getSurfacePosition(hex)
-        row["latitude"] = lat
-        row["longitude"] = lon"""
-
     def getAirbornePosition(self, hex):
         lat, lon = pms.adsb.airborne_position_with_ref(hex, self.RAD_LAT, self.RAD_LON)
         return lat, lon
+    
+    def updateRowFromHex(self, row, hex):
+        row["airborne_pos_single_antenna_flag"] = self.getSingleAntennaFlag(self.hex2bin(hex))
+        row["airborne_pos_surveillance_status"] = self.getSurveillanceStatus(self.hex2bin(hex))
+        row["airborne_pos_time"] = self.getTime(self.hex2bin(hex))
+        row["airborne_pos_CPR"] = self.getCPRFormat(self.hex2bin(hex))
+        row["airborne_pos_altitude_type"] = self.extractAltitudeType(self.get_typecode(hex))
+        
+        lat, lon = self.getAirbornePosition(hex)
+        row["airborne_pos_lat"] = lat
+        row["airborne_pos_lon"] = lon
+
