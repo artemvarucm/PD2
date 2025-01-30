@@ -33,6 +33,7 @@ def merge(path, new_path):
         "squawk",
         "spi",
         "position_source",
+        "vrsi"
     ]
 
     # IMPORTANTE: Contiene la lista con todos los tipos de mensajes, para poder comprobar
