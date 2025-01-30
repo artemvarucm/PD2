@@ -15,7 +15,7 @@ class AirbornePositionMessage(MessageType):
     def match(self, typecode):
         return (typecode >= 9 and typecode <= 18) or (typecode >= 20 and typecode <= 22)
 
-    def get_typecode(msg):
+    def get_typecode(self, msg):
         return pms.common.typecode(msg)
 
     def hex2bin(self, msg):
