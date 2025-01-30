@@ -11,7 +11,6 @@ class AirbornePositionMessage(MessageType):
     def match(self, typecode):
         return (typecode >= 9 and typecode <= 18) or (typecode >= 20 and typecode <= 22)
 
-
     def encodeHex(self, b64):
         return base64.b64decode(b64).hex()
 
@@ -45,10 +44,6 @@ class AirbornePositionMessage(MessageType):
         msg_CPR_bin = msg_bin[bit_time]
         msg_CPR = bin2int(msg_CPR_bin)
         return decoder[msg_CPR]
-
-    def getSurfacePosition(self, msg_hex, ref_lat=40.51, ref_lon=-3.53):
-        lat, lon = pms.adsb.airborne_position_with_ref(msg_hex, ref_lat, ref_lon)
-        return lat, lon
 
     def getSurveillanceStatus(self, msg_bin):
         decoder = {0: "no_condition", 1: "permanent_alert", 2: "temporary_alert", 3: "SPI_condition"}
