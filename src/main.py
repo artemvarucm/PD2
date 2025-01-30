@@ -33,7 +33,12 @@ def merge(path, new_path):
         "squawk",
         "spi",
         "position_source",
-        "vrsi"
+        "vrsi",
+        "airborne_pos_single_antenna_flag",
+        "airborne_pos_time",
+        "airborne_pos_altitude_type",
+        "airborne_pos_CPR",
+        "airborne_pos_surveillance_status"
     ]
 
     # IMPORTANTE: Contiene la lista con todos los tipos de mensajes, para poder comprobar
