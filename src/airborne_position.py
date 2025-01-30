@@ -67,5 +67,5 @@ class AirbornePositionMessage(MessageType):
         row["longitude"] = lon"""
 
     def getSurfacePosition(self, hex):
-        lat, lon = pms.adsb.position_with_ref(hex, self.RAD_LAT, self.RAD_LON)
+        lat, lon = pms.adsb.airborne_position_with_ref(hex, self.RAD_LAT, self.RAD_LON)
         return lat, lon
