@@ -43,7 +43,7 @@ class MapVisualization:
     def createDescriptionLandingStrip(self, nombre_pista, latitud, longitud):
         return f"""
                         <div style="text-align: center;">
-                        <b>PISTA {nombre_pista}</b><br>
+                        <b>PISTA {nombre_pista + 1}</b><br>
                         Lat: {latitud}<br>
                         Lon: {longitud}
                     """
@@ -85,10 +85,10 @@ class MapVisualization:
         ).add_to(self.mapa)
 
     def saveMap(self, nombre_mapa):
-        self.mapa.save(f"../mapas/{nombre_mapa}.html")
+        self.mapa.save(f"./mapas/{nombre_mapa}.html")
 
     def showMap(self, nombre_mapa):
-        ruta = f"../mapas/{nombre_mapa}.html"
+        ruta = f"./mapas/{nombre_mapa}.html"
     
         if os.path.exists(ruta):
             webbrowser.open(f"file://{os.path.abspath(ruta)}")
