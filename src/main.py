@@ -4,6 +4,8 @@ import pyModeS as pms
 import time
 from surface_position import SurfacePositionMessage
 from airborne_position import AirbornePositionMessage
+from airbone_velocity import AirborneVelocity
+
 
 """
 Recorre fila por fila el dataFrame para devolver un df
@@ -15,6 +17,19 @@ new_path: Ruta al csv en la salida
 """
 def merge(path, new_path):
     # columnas del dataframe resultante
+
+
+    columns = [
+    'time_position', 'airborne_pos_single_antenna_flag', 'airborne_pos_CPR', 'SH',
+    'airborne_pos_altitude_type', 'IC', 'T', 'position_source', 'last_contact',
+    'airborne_pos_lon', 'vertical_rate', 'V', 'on_ground', 'ST', 'baro_altitude',
+    'timestamp', 'H', 'dAlt', 'airborne_pos_time', 'VrSrc', 'Dns', 'SDif', 'HDG',
+    'squawk', 'IFR', 'VR', 'origin_country', 'icao', 'sensors', 'true_track',
+    'latitude', 'callsign', 'Dew', 'VT', 'Svr', 'vrsi', 'Vns', 'airborne_pos_lat',
+    'velocity', 'spi', 'airborne_pos_surveillance_status', 'NUC', 'Vew', 'longitude',
+    'geo_altitude'
+    ]
+    """
     columns = [
         "timestamp",
         "icao",
@@ -43,10 +58,10 @@ def merge(path, new_path):
         "airborne_pos_CPR",
         "airborne_pos_surveillance_status"
     ]
-
+    """
     # IMPORTANTE: Contiene la lista con todos los tipos de mensajes, para poder comprobar
     # si el mensaje pertenece a ese tipo y ejecutar la logica correspondiente
-    messagesTypes = [SurfacePositionMessage(), AirbornePositionMessage()]
+    messagesTypes = [SurfacePositionMessage(), AirbornePositionMessage(),AirborneVelocity()]
 
     # Guarda el ultimo estado de atributos avion
     # (la clave seria ICAO, el valor seria otro diccionario con los valores para todas las columnas)
