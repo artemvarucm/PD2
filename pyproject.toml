@@ -10,4 +10,5 @@ dependencies = [
     "numpy>=2.2.2",
     "pandas>=2.2.3",
     "pymodes>=2.19",
+    "folium>=0.19.4",
 ]
