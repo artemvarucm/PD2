@@ -82,7 +82,7 @@ def merge(path, new_path):
             msgHex = encodeHex(row["message"])
             DL = getDownlink(msgHex)
 
-            if DL in [17, 18]:  # segun documentacion ads-b.MD
+            if not msgIsCorrupted(msgHex) and DL in [17, 18]:
                 # PARTE 2: Sacamos atributos que conocemos de antes a partir del ICAO del avion
                 ICAO = getICAO(msgHex)
 
@@ -137,6 +137,8 @@ def getTypeCode(hex):
 def getICAO(hex):
     return str(pms.common.icao(hex))
 
+def msgIsCorrupted(hex):
+    return (pms.crc(hex) != 0)
 
 # PRUEBA
 merge("202412010000_202412072359.csv", "new.csv")
