@@ -16,6 +16,8 @@ class MapVisualization:
             {"nombre": "3", "lat": 40.507, "lon": -3.574},
             {"nombre": "4", "lat": 40.507, "lon": -3.559},
         ]
+
+        self.aviones = set()
         self.layers = {
             "radares": {'capa': folium.FeatureGroup(name="Radares"), 'color': "darkblue"},
             "pistas": {'capa': folium.FeatureGroup(name="Pistas de Aterrizaje"), 'color': "green"},
@@ -133,11 +135,4 @@ m.showMap()
 time.sleep(1)
 m.paintAirplane("34", 40.57, -3.70)
 m.showMap()"""
-#help(folium.Marker())
-a = folium.Marker(
-            location=[40.59, -3.70],
-            tooltip=folium.Tooltip("hola",
-                max_width=300,
-            )
-)
-print(a.get(0))
+
