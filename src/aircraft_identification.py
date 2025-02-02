@@ -57,3 +57,6 @@ class AircraftIdentificationMessage(MessageType):
                 7: "Rotorcraft"
             }
         }
+
+    def match(self, typecode):
+        return typecode >= 1 and typecode <= 4
