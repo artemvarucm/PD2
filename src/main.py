@@ -69,7 +69,7 @@ def merge(path, new_path):
 
     i = 0
     chunksize = 10**6
-    for chunk in pd.read_csv(path, sep=";", chunksize=chunksize):
+    for chunk in pd.read_csv(path, sep=",", chunksize=chunksize):
         # Guarda cada chunk procesado
         processed_rows = []
 
@@ -78,6 +78,7 @@ def merge(path, new_path):
 
         for index, row in chunk.iterrows():
             # PARTE 1: Comprobamos el downlink format
+            print("index: ", index) 
             T = row["ts_kafka"]
             msgHex = encodeHex(row["message"])
             DL = getDownlink(msgHex)
@@ -141,4 +142,4 @@ def msgIsCorrupted(hex):
     return (pms.crc(hex) != 0)
 
 # PRUEBA
-merge("202412010000_202412072359.csv", "new.csv")
+merge("flights.part3.csv", "new.csv")
