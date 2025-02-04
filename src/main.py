@@ -24,8 +24,8 @@ def merge(path, new_path):
     'airborne_pos_altitude_type', 'IC', 'T', 'position_source', 'last_contact',
     'airborne_pos_lon', 'vertical_rate', 'V', 'on_ground', 'ST', 'baro_altitude',
     'timestamp', 'H', 'dAlt', 'airborne_pos_time', 'VrSrc', 'Dns', 'SDif', 'HDG',
-    'squawk', 'IFR', 'VR', 'origin_country', 'icao', 'sensors', 'true_track',
-    'latitude', 'callsign', 'Dew', 'VT', 'Svr', 'vrsi', 'Vns', 'airborne_pos_lat',
+    'squawk', 'IFR', 'VR','VS', 'origin_country', 'icao', 'sensors', 'true_track',
+    'latitude', 'callsign', 'Dew', 'VT', 'Svr', 'vrsi', 'airborne_pos_lat',
     'velocity', 'spi', 'airborne_pos_surveillance_status', 'NUC', 'Vew', 'longitude',
     'geo_altitude'
     ]
@@ -69,7 +69,7 @@ def merge(path, new_path):
 
     i = 0
     chunksize = 10**6
-    for chunk in pd.read_csv(path, sep=",", chunksize=chunksize):
+    for chunk in pd.read_csv(path, sep=";", chunksize=chunksize):
         # Guarda cada chunk procesado
         processed_rows = []
 
@@ -80,7 +80,8 @@ def merge(path, new_path):
             # PARTE 1: Comprobamos el downlink format
             print("index: ", index) 
             T = row["ts_kafka"]
-            msgHex = encodeHex(row["message"])
+          ##  msgHex = encodeHex(row["message"])
+            msgHex = row["message"]
             DL = getDownlink(msgHex)
 
             if not msgIsCorrupted(msgHex) and DL in [17, 18]:
@@ -142,4 +143,4 @@ def msgIsCorrupted(hex):
     return (pms.crc(hex) != 0)
 
 # PRUEBA
-merge("flights.part3.csv", "new.csv")
+merge("hamzaPrueba.csv", "HamzaPruebaNuevo.csv")

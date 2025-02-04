@@ -11,7 +11,7 @@ class AirborneVelocity(MessageType):
         return typecode == 19
     
     def updateRowFromHex(self,row,hex):
-        row["V"],row["H"],row["VR"],row["VT"] = pms.adsb.velocity(hex) ## speed,track angle (heading), vertical speed,speed type
+        row["V"],row["H"],row["VS"],row["VT"] = pms.adsb.velocity(hex) ## speed,track angle (heading), vertical speed,speed type
         row["ST"] = self.get_subtype(hex)
         row["IC"] = self.get_intent_change_flag(hex)
         row["IFR"] = self.get_ifr_capability_flag(hex)
@@ -20,7 +20,7 @@ class AirborneVelocity(MessageType):
         row["Svr"]= self.get_sign_bit_for_vertical_rate(hex)
         row["SDif"] = self.get_sign_gnss_baro_difference(hex)
         row["dAlt"] = self.get_difference_gnss_baro_altitudes(hex,row["SDif"])
-        ##row["VR"] = self.get_vertical_rate(hex,row["Svr"])
+        row["VR"] = self.get_vertical_rate(hex,row["Svr"])
         if row["ST"] == 1 or row["ST"] == 2:
             row["Dew"] = self.get_direction_east_west(hex)
             row["Vew"] = self.get_east_west_velocity(hex,row["ST"])
@@ -59,8 +59,8 @@ class AirborneVelocity(MessageType):
         return pms.bin2int(pms.hex2bin(hex)[68])
 
     def get_vertical_rate(self,hex,svr):
-        decimal_value = pms.bin2int(pms.hex2bin(hex)[69:78])
-        return 64 * (decimal_value - 1) if svr == 0 else -64 * (decimal_value - 1)
+        return pms.bin2int(pms.hex2bin(hex)[69:78])
+        ##return 64 * (decimal_value - 1) if svr == 0 else -64 * (decimal_value - 1)
     
 
     ## GNSS Baro Difference
@@ -69,7 +69,8 @@ class AirborneVelocity(MessageType):
         return pms.bin2int(pms.hex2bin(hex)[80])
     
     def get_difference_gnss_baro_altitudes(self,hex,sign_bit):
-        return sign_bit * (pms.bin2int(pms.hex2bin(hex)[81:88]) - 1)
+        sign = 1 if sign_bit == 0 else -1
+        return sign * (pms.bin2int(pms.hex2bin(hex)[81:88]) - 1) * 25
     
 
     ## Function for subtype 1 and 2
