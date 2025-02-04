@@ -80,8 +80,8 @@ def merge(path, new_path):
             # PARTE 1: Comprobamos el downlink format
             print("index: ", index) 
             T = row["ts_kafka"]
-          ##  msgHex = encodeHex(row["message"])
-            msgHex = row["message"]
+            msgHex = encodeHex(row["message"])
+          
             DL = getDownlink(msgHex)
 
             if not msgIsCorrupted(msgHex) and DL in [17, 18]:
@@ -143,4 +143,4 @@ def msgIsCorrupted(hex):
     return (pms.crc(hex) != 0)
 
 # PRUEBA
-merge("hamzaPrueba.csv", "HamzaPruebaNuevo.csv")
+merge("flights.part3.csv", "new.csv")

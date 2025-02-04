@@ -25,7 +25,7 @@ class AirborneVelocity(MessageType):
             row["Dew"] = self.get_direction_east_west(hex)
             row["Vew"] = self.get_east_west_velocity(hex,row["ST"])
             row["Dns"] = self.direction_north_south(hex)
-            row["Vns"] = self.get_north_south_velocity(hex,row["ST"])
+           ## row["Vns"] = self.get_north_south_velocity(hex,row["ST"])
         elif row["ST"] == 3 or row["ST"] == 4:
             row["SH"]= self.get_status_bit_for_magnetic_heading(hex)
             row["HDG"] = self.get_magnetic_heading(hex)
