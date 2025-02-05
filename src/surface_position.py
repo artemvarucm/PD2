@@ -31,7 +31,6 @@ class SurfacePositionMessage(MessageType):
         row["latitude"] = lat
         row["longitude"] = lon
         row["surface_velocity"] = self.getMovement(encoded_speed)
-        row["ground_status"] = binary_message[44]
         row["ground_track"] = self.decode_ground_track(encoded_track, binary_message[44])
 
     def getSurfacePosition(self, hex):
