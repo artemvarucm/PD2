@@ -58,7 +58,7 @@ class SurfacePositionMessage(MessageType):
             return 'RESERVED'
         
     def decode_ground_track(self, encoded_track, status_bit):
-        if status_bit == '0':
+        if status_bit == '1':
             ground_track = (encoded_track / 128) * 360
             return ground_track
         else:
