@@ -60,3 +60,11 @@ class AircraftIdentificationMessage(MessageType):
 
     def match(self, typecode):
         return typecode >= 1 and typecode <= 4
+    
+
+    def updateRowFromHex(self, row, hex):
+        callsign = pms.decoder.adsb.callsign(hex)
+        tc = pms.decoder.adsb.tc(hex)
+        cat = pms.decoder.adsb.category(hex)
+        row["callsign"] = callsign
+        row["vortex"] = self.vortexDictionary[tc][cat]
