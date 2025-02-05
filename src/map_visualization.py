@@ -17,19 +17,15 @@ class MapVisualization:
             {"nombre": "4", "lat": 40.507, "lon": -3.559},
         ]
 
-        self.aviones = set()
-        self.layers = {
-            "radares": {'capa': folium.FeatureGroup(name="Radares"), 'color': "darkblue"},
-            "pistas": {'capa': folium.FeatureGroup(name="Pistas de Aterrizaje"), 'color': "green"},
-            "aviones": {'capa': folium.FeatureGroup(name="Aviones"), 'color': "lightgray", 'añadida': False},
-        }
+        self.capa_aviones = folium.FeatureGroup(name="Aviones")
         
         self.initializeMap()
 
     def initializeMap(self):
         self.paintRadars()
         self.paintLandingStrips()
-        self.layers['aviones']['capa'].add_to(self.mapa)
+        self.capa_aviones = folium.FeatureGroup(name="Aviones")
+        self.capa_aviones.add_to(self.mapa)
         self.layerControl.add_to(self.mapa)
 
     def createMap(self, latitud=40.51, longitud=-3.53):
@@ -39,7 +35,7 @@ class MapVisualization:
         return mapa
     
     # PAINT RADARES
-    def paintRadar(self, nombre_radar, latitud, longitud):
+    def paintRadar(self, nombre_radar, latitud, longitud, capa_radares):
         folium.Marker(
             location=[latitud, longitud],
             tooltip=folium.Tooltip(
@@ -52,15 +48,17 @@ class MapVisualization:
                 max_width=300,
             ),
             icon=folium.Icon(
-                color=self.layers['radares']['color'], icon="fa-solid fa-satellite-dish", prefix="fa"
+                color=capa_radares['color'], icon="fa-solid fa-satellite-dish", prefix="fa"
             ),
-        ).add_to(self.layers['radares']['capa'])        
+        ).add_to(capa_radares['capa'])        
     
     def paintRadars(self):
+        capa_radares =  {'capa': folium.FeatureGroup(name="Radares"), 'color': "darkblue"}
+
         for radar in self.radares:
-            self.paintRadar(radar['nombre'], radar['lat'], radar['lon'])
+            self.paintRadar(radar['nombre'], radar['lat'], radar['lon'], capa_radares)
         
-        self.layers['radares']['capa'].add_to(self.mapa)
+        capa_radares['capa'].add_to(self.mapa)
 
 
     # PAINT PISTAS ATERRIZAJE
@@ -72,7 +70,7 @@ class MapVisualization:
                         Lon: {longitud}
                     """
 
-    def paintLandingStrip(self, nombre_pista, latitud, longitud):
+    def paintLandingStrip(self, nombre_pista, latitud, longitud, capa_pistas):
         folium.Marker(
             location=[latitud, longitud],
             tooltip=folium.Tooltip(
@@ -80,16 +78,19 @@ class MapVisualization:
                 max_width=300,
             ),
             icon=folium.Icon(
-                color=self.layers['pistas']['color'], icon="fa-solid fa-plane-arrival", prefix="fa"
+                color=capa_pistas['color'], icon="fa-solid fa-plane-arrival", prefix="fa"
             ),
-        ).add_to(self.layers['pistas']['capa'])
+        ).add_to(capa_pistas['capa'])
 
         
     def paintLandingStrips(self):
-        for pista in self.pistas:
-            self.paintLandingStrip(pista['nombre'], pista["lat"], pista["lon"])
         
-        self.layers['pistas']['capa'].add_to(self.mapa)
+        capa_pistas =  {'capa': folium.FeatureGroup(name="Pistas de Aterrizaje"), 'color': "green"}
+
+        for pista in self.pistas:
+            self.paintLandingStrip(pista['nombre'], pista["lat"], pista["lon"], capa_pistas)
+        
+        capa_pistas['capa'].add_to(self.mapa)
 
 
     # PINTAR AVIONES
@@ -101,15 +102,28 @@ class MapVisualization:
                         Lon: {longitud}
                     """
 
-    def paintAirplane(self, id_avion, latitud, longitud):
+    def airplaneIcon(self, onGroung):
+        if onGroung:
+            path_icon = "./icons/airplane_ground.png"
+        else:
+            path_icon = "./icons/airplane_air.png"
+
+        icon = folium.CustomIcon(
+            path_icon,
+            icon_size=(25, 25),
+        )
+
+        return icon
+    
+    def paintAirplane(self, id_avion, latitud, longitud, on_ground):
         folium.Marker(
             location=[latitud, longitud],
             tooltip=folium.Tooltip(
                 self.createDescriptionAirplane(id_avion, latitud, longitud),
                 max_width=300,
             ),
-            icon=folium.Icon(color=self.layers['aviones']['color'], icon="fa-solid fa-plane", prefix="fa"),
-        ).add_to(self.layers['aviones']['capa'])
+            icon=self.airplaneIcon(on_ground),
+        ).add_to(self.capa_aviones)
 
     def saveMap(self, nombre_mapa):
         self.mapa.save(f"./mapas/{nombre_mapa}.html")
@@ -122,17 +136,19 @@ class MapVisualization:
             self.saveMap(nombre_mapa)
         webbrowser.open(f"file://{os.path.abspath(f"./mapas/{nombre_mapa}.html")}")
 
+    def reset(self):
+        self.mapa = self.createMap()
+        self.initializeMap()
 
 """
 m = MapVisualization()
+m.paintAirplane("34", 40.53, -3.56, True)
+m.paintAirplane("34", 40.53, -3.58, False)
 m.showMap()
 time.sleep(1)
-m.paintAirplane("34", 40.53, -3.56)
+m.reset()
 m.showMap()
 time.sleep(1)
-m.paintAirplane("34", 40.59, -3.70)
-m.showMap()
-time.sleep(1)
-m.paintAirplane("34", 40.57, -3.70)
+m.paintAirplane("34", 40.53, -3.58, False)
 m.showMap()"""
 
