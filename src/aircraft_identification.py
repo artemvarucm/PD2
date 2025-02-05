@@ -13,7 +13,7 @@ VORTEX_TYPE
 
 class AircraftIdentificationMessage(MessageType):
 
-    def __init__(self, tc):
+    def __init__(self):
         # DICCIONARIO DE COMBINACIONES PARA VARIABLE VORTEX,PRIMER NIVEL CAT, SEGUNDO NIVEL TC
         self.vortexDictionary = {
             1: {
@@ -64,7 +64,11 @@ class AircraftIdentificationMessage(MessageType):
 
     def updateRowFromHex(self, row, hex):
         callsign = pms.decoder.adsb.callsign(hex)
-        tc = pms.decoder.adsb.tc(hex)
+        tc = self.getTypeCode(hex)
         cat = pms.decoder.adsb.category(hex)
         row["callsign"] = callsign
         row["vortex"] = self.vortexDictionary[tc][cat]
+
+    
+    def getTypeCode(self, hex):
+        return pms.common.typecode(hex)
