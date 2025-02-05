@@ -26,9 +26,9 @@ def merge(path, new_path):
     'airborne_pos_lon', 'vertical_rate', 'V', 'on_ground', 'ST', 'baro_altitude',
     'timestamp', 'H', 'dAlt', 'airborne_pos_time', 'VrSrc', 'Dns', 'SDif', 'HDG',
     'squawk', 'IFR', 'VR','VS', 'origin_country', 'icao', 'sensors', 'true_track',
-    'latitude', 'callsign', 'Dew', 'VT', 'Svr', 'vrsi', 'airborne_pos_lat',
-    'velocity', 'spi', 'airborne_pos_surveillance_status', 'NUC', 'Vew', 'longitude',
-    'geo_altitude'
+    'longitud', 'latitude', 'surface_velocity', 'ground_status','ground_track','callsign', 
+    'Dew', 'VT', 'Svr', 'vrsi', 'airborne_pos_lat', 'spi', 'airborne_pos_surveillance_status', 'NUC', 'Vew',
+    'geo_altitude', 'vortex'
     ]
     """
     columns = [
