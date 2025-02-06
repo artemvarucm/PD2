@@ -37,29 +37,34 @@ class SurfacePositionMessage(MessageType):
         lat, lon = pms.adsb.position_with_ref(hex, self.RAD_LAT, self.RAD_LON)
         return lat, lon
     
+    #
     def getMovement(self, speedValue):
         if speedValue == 0:
-            return 'SPEED NOT AVAILABLE'
+            return -1  # SPEED NOT AVAILABLE
         elif speedValue == 1:
-            return 'STOPPED (v < 0.125 kt)'
-        elif speedValue < 9:
-            return (speedValue - 2)* 0.125 + 0.125
-        elif speedValue < 13:
-            return (speedValue - 9)* 0.25 + 1
-        elif speedValue < 39:
-            return (speedValue - 13)* 0.5 + 2
-        elif speedValue < 94:
-            return (speedValue - 39)* 1 + 15
-        elif speedValue < 109:
-            return (speedValue - 94)* 2 + 70
+            return 0   # STOPPED (v < 0.125 kt)
+        elif 2 <= speedValue < 9:
+            return (speedValue - 2) * 0.125 + 0.125
+        elif 9 <= speedValue < 13:
+            return (speedValue - 9) * 0.25 + 1
+        elif 13 <= speedValue < 39:
+            return (speedValue - 13) * 0.5 + 2
+        elif 39 <= speedValue < 94:
+            return (speedValue - 39) * 1 + 15
+        elif 94 <= speedValue < 109:
+            return (speedValue - 94) * 2 + 70
+        elif 109 <= speedValue < 124:
+            return (speedValue - 109) * 5 + 100
         elif speedValue == 124:
-            return 'MAX (v >= 175 kt)'
+            return 175  # MAX (v >= 175 kt)
         else:
-            return 'RESERVED'
-        
+            return -2  # RESERVED
+
+    
+    # -1 implica que la información no es válida
     def decode_ground_track(self, encoded_track, status_bit):
         if status_bit == '1':
             ground_track = (encoded_track / 128) * 360
             return ground_track
         else:
-            return "invalid"
+            return -1 #información invalida
