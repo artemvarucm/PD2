@@ -142,13 +142,16 @@ class MapVisualization:
 
 """
 m = MapVisualization()
-m.paintAirplane("34", 40.53, -3.56, True)
-m.paintAirplane("34", 40.53, -3.58, False)
+import pandas as pd
+df = pd.read_csv("./new.csv")
+print(df[['airborne_pos_lon', 'airborne_pos_lat', 'latitude', 'longitud']])
+
+df['onGround'] = ~df["airborne_pos_lon"].isna() 
+print(df[['airborne_pos_lon', 'airborne_pos_lat', 'latitude', 'longitud', 'onGround']])
+df = df[['airborne_pos_lon', 'airborne_pos_lat', 'latitude', 'longitud', 'onGround']]
+for i, row in df.iterrows():
+    if row["onGround"]:
+        m.paintAirplane(i,row["airborne_pos_lat"], row["airborne_pos_lon"], row["onGround"])
 m.showMap()
-time.sleep(1)
-m.reset()
-m.showMap()
-time.sleep(1)
-m.paintAirplane("34", 40.53, -3.58, False)
-m.showMap()"""
+"""
 
