@@ -78,38 +78,44 @@ def merge(path, new_path):
         start = time.time()
 
         for index, row in chunk.iterrows():
-            # PARTE 1: Comprobamos el downlink format
-            print("index: ", index) 
-            T = row["ts_kafka"]
-            msgHex = encodeHex(row["message"])
-          
-            DL = getDownlink(msgHex)
+            try:
+                # PARTE 1: Comprobamos el downlink format
+                #print("index: ", index) 
+                T = row["ts_kafka"]
+                msgHex = encodeHex(row["message"])
+            
+                DL = getDownlink(msgHex)
 
-            if not msgIsCorrupted(msgHex) and DL in [17, 18]:
-                # PARTE 2: Sacamos atributos que conocemos de antes a partir del ICAO del avion
-                ICAO = getICAO(msgHex)
+                if not msgIsCorrupted(msgHex) and DL in [17, 18]:
+                    # PARTE 2: Sacamos atributos que conocemos de antes a partir del ICAO del avion
+                    ICAO = getICAO(msgHex)
 
-                if ICAO in plane_last_states:
-                    # este avion ya se ha procesado antes (los atributos se mantienen)
-                    newRow = plane_last_states[ICAO].copy()
-                else:
-                    # este avion no se ha procesado antes
-                    newRow = {col: None for col in columns}
-                    newRow["icao"] = ICAO
-                    plane_last_states[ICAO] = newRow
-
-                newRow["timestamp"] = T
-
-                # PARTE 3: Logica de procesamiento de campos segun cada mensaje
-                TC = getTypeCode(msgHex)
-                for mType in messagesTypes:
-                    if mType.match(TC):
-                        mType.updateRowFromHex(newRow, msgHex)
+                    if ICAO in plane_last_states:
+                        # este avion ya se ha procesado antes (los atributos se mantienen)
+                        newRow = plane_last_states[ICAO].copy()
+                    else:
+                        # este avion no se ha procesado antes
+                        newRow = {col: None for col in columns}
+                        newRow["icao"] = ICAO
                         plane_last_states[ICAO] = newRow
-                        processed_rows.append(newRow)
-                        break  # solo puede ser de un tipo el mensaje
 
-        
+                    newRow["timestamp"] = T
+
+                    # PARTE 3: Logica de procesamiento de campos segun cada mensaje
+                    TC = getTypeCode(msgHex)
+
+                    for mType in messagesTypes:
+                        if mType.match(TC):
+                            mType.updateRowFromHex(newRow, msgHex)
+                            plane_last_states[ICAO] = newRow
+                            processed_rows.append(newRow)
+                            break  # solo puede ser de un tipo el mensaje
+            except Exception as e:
+                # Escribir el error en un archivo de texto
+                with open("errores.log", "a") as archivo:
+                    archivo.write(f"Error: {str(e)}\n")
+                print("Se ha registrado un error en 'errores.log'")
+                
 
         if processed_rows:
             dfProcessed = pd.DataFrame(processed_rows, columns=columns)
@@ -144,4 +150,4 @@ def msgIsCorrupted(hex):
     return (pms.crc(hex) != 0)
 
 # PRUEBA
-merge("flights.part3.csv", "new.csv")
+merge("202412010000_202412072359.csv", "new.csv")
