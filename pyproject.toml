@@ -11,4 +11,6 @@ dependencies = [
     "pandas>=2.2.3",
     "pymodes>=2.19",
     "folium>=0.19.4",
+    "dask>=2025.1.0",
+    "pyarrow==17.0.0",
 ]
