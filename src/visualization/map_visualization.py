@@ -1,0 +1,157 @@
+import folium
+import webbrowser
+import os
+import time
+
+
+class MapVisualization:
+    def __init__(self):
+        self.mapa = self.createMap()
+        self.layerControl = folium.LayerControl(collapsed=False, sortLayers=True)
+
+        self.radares = [{"nombre": "PRINCIPAL", "lat": 40.51, "lon": -3.53}]
+        self.pistas = [
+            {"nombre": "1", "lat": 40.463, "lon": -3.554},
+            {"nombre": "2", "lat": 40.473, "lon": -3.536},
+            {"nombre": "3", "lat": 40.507, "lon": -3.574},
+            {"nombre": "4", "lat": 40.507, "lon": -3.559},
+        ]
+
+        self.capa_aviones = folium.FeatureGroup(name="Aviones")
+        
+        self.initializeMap()
+
+    def initializeMap(self):
+        self.paintRadars()
+        self.paintLandingStrips()
+        self.capa_aviones = folium.FeatureGroup(name="Aviones")
+        self.capa_aviones.add_to(self.mapa)
+        self.layerControl.add_to(self.mapa)
+
+    def createMap(self, latitud=40.51, longitud=-3.53):
+        mapa = folium.Map(
+            location=[latitud, longitud], zoom_start=12
+        )
+        return mapa
+    
+    # PAINT RADARES
+    def paintRadar(self, nombre_radar, latitud, longitud, capa_radares):
+        folium.Marker(
+            location=[latitud, longitud],
+            tooltip=folium.Tooltip(
+                f"""
+                                            <div style="text-align: center;">
+                                            <b>RADAR {nombre_radar}</b><br>
+                                            Lat: {latitud}<br>
+                                            Lon: {longitud}
+                                        """,
+                max_width=300,
+            ),
+            icon=folium.Icon(
+                color=capa_radares['color'], icon="fa-solid fa-satellite-dish", prefix="fa"
+            ),
+        ).add_to(capa_radares['capa'])        
+    
+    def paintRadars(self):
+        capa_radares =  {'capa': folium.FeatureGroup(name="Radares"), 'color': "darkblue"}
+
+        for radar in self.radares:
+            self.paintRadar(radar['nombre'], radar['lat'], radar['lon'], capa_radares)
+        
+        capa_radares['capa'].add_to(self.mapa)
+
+
+    # PAINT PISTAS ATERRIZAJE
+    def createDescriptionLandingStrip(self, nombre_pista, latitud, longitud):
+        return f"""
+                        <div style="text-align: center;">
+                        <b>PISTA {nombre_pista}</b><br>
+                        Lat: {latitud}<br>
+                        Lon: {longitud}
+                    """
+
+    def paintLandingStrip(self, nombre_pista, latitud, longitud, capa_pistas):
+        folium.Marker(
+            location=[latitud, longitud],
+            tooltip=folium.Tooltip(
+                self.createDescriptionLandingStrip(nombre_pista, latitud, longitud),
+                max_width=300,
+            ),
+            icon=folium.Icon(
+                color=capa_pistas['color'], icon="fa-solid fa-plane-arrival", prefix="fa"
+            ),
+        ).add_to(capa_pistas['capa'])
+
+        
+    def paintLandingStrips(self):
+        
+        capa_pistas =  {'capa': folium.FeatureGroup(name="Pistas de Aterrizaje"), 'color': "green"}
+
+        for pista in self.pistas:
+            self.paintLandingStrip(pista['nombre'], pista["lat"], pista["lon"], capa_pistas)
+        
+        capa_pistas['capa'].add_to(self.mapa)
+
+
+    # PINTAR AVIONES
+    def createDescriptionAirplane(self, id_avion, latitud, longitud):
+        return f"""
+                        <div style="text-align: center;">
+                        <b>ID {id_avion}</b><br>
+                        Lat: {latitud}<br>
+                        Lon: {longitud}
+                    """
+
+    def airplaneIcon(self, onGroung):
+        if onGroung:
+            path_icon = "./assets/icons/airplane_ground.png"
+        else:
+            path_icon = "./assets/icons/airplane_air.png"
+
+        icon = folium.CustomIcon(
+            path_icon,
+            icon_size=(25, 25),
+        )
+
+        return icon
+    
+    def paintAirplane(self, id_avion, latitud, longitud, on_ground):
+        folium.Marker(
+            location=[latitud, longitud],
+            tooltip=folium.Tooltip(
+                self.createDescriptionAirplane(id_avion, latitud, longitud),
+                max_width=300,
+            ),
+            icon=self.airplaneIcon(on_ground),
+        ).add_to(self.capa_aviones)
+
+    def saveMap(self, nombre_mapa):
+        self.mapa.save(f"./mapas/{nombre_mapa}.html")
+
+    def showMap(self, nombre_mapa=None):
+        if nombre_mapa is None:
+            nombre_mapa = time.strftime("%d-%m-%Y_%H-%M-%S")
+        
+        if not os.path.exists(f"./mapas/{nombre_mapa}.html"):
+            self.saveMap(nombre_mapa)
+        webbrowser.open(f"file://{os.path.abspath(f"./mapas/{nombre_mapa}.html")}")
+
+    def reset(self):
+        self.mapa = self.createMap()
+        self.initializeMap()
+
+"""
+m = MapVisualization()
+import pandas as pd
+df = pd.read_csv("./new.csv")
+print(df[['airborne_pos_lon', 'airborne_pos_lat', 'latitude', 'longitud']])
+
+df['onGround'] = ~df["airborne_pos_lon"].isna() 
+print(df[['airborne_pos_lon', 'airborne_pos_lat', 'latitude', 'longitud', 'onGround']])
+df = df[['airborne_pos_lon', 'airborne_pos_lat', 'latitude', 'longitud', 'onGround']]
+for i, row in df.iterrows():
+    if row["onGround"]:
+        m.paintAirplane(i,row["airborne_pos_lat"], row["airborne_pos_lon"], row["onGround"])
+m.showMap()
+"""
+

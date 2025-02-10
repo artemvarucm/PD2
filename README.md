@@ -4,7 +4,7 @@
 
 ### INDICE
 - [🚀 Ejecutar el proyecto](#ejecutar-el-proyecto)
-- [💡 Estructura del proyecto](#)
+- [💡 Estructura del proyecto](#estructura-del-proyecto)
 - [🗂️ Datos](#)
 - [🛠️ Para desarrolladores](#para-desarrolladores)
 <!--- [Estrategias](#)-->
@@ -26,8 +26,31 @@ Instalación uv:
 $ uv sync
 $ source .venv/bin/activate
 ```
-Ejecución del notebook seleccionando el entorno virtual seleccionado
+**Ejecución del notebook seleccionando el entorno virtual .venv**
 
+### 💡 Estructura del proyecto
+```
+|- assets: contiene el conjunto de imágenes usadas, como iconos.
+|
+|- data: contiene los datos preprocesados, listos para usar.
+|
+|- docs: contiene la documentación, junto con algunos problemas que pueden surgir.
+|
+|- mapas: contiene las visualizaciones del mapa
+|
+|-  src: contiene todo el código, principalmente archivos que sirven para transformar y visualizar los datos
+    |
+    |- exploracion: notebooks con análisis de los datos generados
+    |
+    |- utils: módulo para preprocesar más fácilmente.
+    |
+    |- visualization: código de visualizaciones de datos.
+    |
+    |- main.py: archivo para iterar sobre los datos crudos, donde cada fila representa características concretas, y transformarlos en filas con todas las posibles características. Hace uso de utils para el preprocesamiento.
+    |
+    |- preprocessing.py: archivo para sacar los datos de aviones en tierra y en aire.
+
+```
 ### 🛠️ Para desarrolladores
 #### Documentación consultada
 

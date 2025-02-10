@@ -1,12 +1,6 @@
 import pandas as pd
-import base64
-import pyModeS as pms
 import time
-from surface_position import SurfacePositionMessage
-from airborne_position import AirbornePositionMessage
-from airbone_velocity import AirborneVelocity
-from aircraft_identification import AircraftIdentificationMessage
-
+from utils import *
 
 """
 Recorre fila por fila el dataFrame para devolver un df
@@ -82,7 +76,7 @@ def merge(path, new_path):
                 # PARTE 1: Comprobamos el downlink format
                 #print("index: ", index) 
                 T = row["ts_kafka"]
-                msgHex = encodeHex(row["message"])
+                msgHex = base64toHEX(row["message"])
             
                 DL = getDownlink(msgHex)
 
@@ -129,25 +123,6 @@ def merge(path, new_path):
         end = time.time()
         print(f"[INFO] Finished reading CHUNK {i} in {end - start}")
         i += 1
-
-
-def encodeHex(b64):
-    return base64.b64decode(b64).hex()
-
-
-def getDownlink(hex):
-    return pms.df(hex)
-
-
-def getTypeCode(hex):
-    return pms.common.typecode(hex)
-
-
-def getICAO(hex):
-    return str(pms.common.icao(hex))
-
-def msgIsCorrupted(hex):
-    return (pms.crc(hex) != 0)
 
 # PRUEBA
 merge("202412010000_202412072359.csv", "new.csv")
