@@ -59,7 +59,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
         if pd.notna(row.get("surface_velocity")) and row["surface_velocity"] == 0:
             ultimo_parado = row["timestamp"]
         # Cuando se detecta que el avión ya está en aire (OnGround == 0)
-        if row["OnGround"] == 0:
+        if ((row["OnGround"] == 0) & (row["DL"] == 11)):
             if ultimo_parado is not None:
                 tiempo_despegue = row["timestamp"]
                 tiempo_espera = (tiempo_despegue - ultimo_parado).total_seconds()

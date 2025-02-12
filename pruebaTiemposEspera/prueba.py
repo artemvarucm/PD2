@@ -40,13 +40,13 @@ def getOnGround(hex):
 
 i = time.time()
 
-df = dd.read_csv("E:/UniversidadCoding/Tercero/PD2/Datos/pequeños/archivo_dividido_3.csv", sep=";")
+df = dd.read_csv("C:/Universidad/Tercero/PD2/splitCSV/archivos_divididos/archivo_dividido_5.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
 
 
 df["messageHex"] = df["message"].apply(encodeHex,meta=str)
 df["DL"] = df["messageHex"].apply(getDownlink,meta=int)
-df = df[(df["DL"] == 17) | (df["DL"] == 18)].reset_index()
+df = df[(df["DL"] == 17) | (df["DL"] == 18) | (df["DL"] == 11)].reset_index()
 df["ICAO"] = df["messageHex"].apply(getICAO,meta=str)
 df["CA"] = df["messageHex"].apply(getCA, meta =int)
 df["OnGround"] = df["messageHex"].apply(getOnGround,meta =int)
@@ -64,4 +64,4 @@ df["TC"] = df["messageHex"].apply(getTypeCode,meta =int)
 df = df.repartition(npartitions=1)
 
 with ProgressBar():
-    df.to_csv('pruebaCSV3', index=False)
+    df.to_csv('pruebaCSV5', index=False)
