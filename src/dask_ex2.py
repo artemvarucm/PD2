@@ -10,6 +10,36 @@ def getAirbornePosition(hex):
     lat, lon = pms.adsb.airborne_position_with_ref(hex, RAD_LAT, RAD_LON)
     return lat, lon
 
+def getSurfacePosition(hex):
+        RAD_LAT = 40.51
+        RAD_LON = -3.53
+        lat, lon = pms.adsb.position_with_ref(hex, RAD_LAT, RAD_LON)
+        return lat, lon
+
+def getSurfaceVelocity(self, hex):
+        binary_message = pms.hex2bin(hex)
+        speedValue = int(binary_message[37:44], 2)
+        if speedValue == 0:
+            return None  # SPEED NOT AVAILABLE
+        elif speedValue == 1:
+            return 0   # STOPPED (v < 0.125 kt)
+        elif 2 <= speedValue < 9:
+            return (speedValue - 2) * 0.125 + 0.125
+        elif 9 <= speedValue < 13:
+            return (speedValue - 9) * 0.25 + 1
+        elif 13 <= speedValue < 39:
+            return (speedValue - 13) * 0.5 + 2
+        elif 39 <= speedValue < 94:
+            return (speedValue - 39) * 1 + 15
+        elif 94 <= speedValue < 109:
+            return (speedValue - 94) * 2 + 70
+        elif 109 <= speedValue < 124:
+            return (speedValue - 109) * 5 + 100
+        elif speedValue == 124:
+            return 175  # MAX (v >= 175 kt)
+        else:
+            return None  # RESERVED
+
 df = dd.read_csv("202412010000_202412072359.csv", sep=";")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
@@ -46,11 +76,22 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
 
     grupo = grupo.sort_values("ts_kafka")
     eventos = []
-    ultimo_info = {'ts_kafka': None, 'velocity': None, 'lat': None, 'lon': None, 'icao': None, 'ground': None}
+    ultimo_info = {
+        'ts_kafka': None,
+        'velocity': None,
+        'lat': None,
+        'lon': None,
+        'icao': None,
+        'ground': None,
+        'direccion': None,
+    }
     umbral = 5 * 60 * 1000 # 5 minutos
     
     first = True
     prev_time = None
+    airPosClass = AirbornePositionMessage()
+    velClass = AirborneVelocity()
+    surPosClass = SurfacePositionMessage()
     for _, row in grupo.iterrows():
         try:
             if first:
@@ -59,22 +100,45 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
 
             if (row['ts_kafka'] - ultimo_info['ts_kafka'] >= umbral):
                 # Guardamos último estado de la ventana terminada
+                if ultimo_info['ground']:
+                    ultimo_info['velocity'] = ultimo_info['surf_vel']
+                    ultimo_info['lat'] = ultimo_info['surf_lat']
+                    ultimo_info['lon'] = ultimo_info['surf_lon']
+
+                del ultimo_info['surf_vel']
+                del ultimo_info['surf_lat']
+                del ultimo_info['surf_lon']
+
                 ultimo_info['ts_kafka'] = prev_time
                 eventos.append(ultimo_info)
 
                 # Reseteamos estado, nueva ventana
-                ts = ultimo_info['ts_kafka']
-                ultimo_info = {'ts_kafka': ts, 'velocity': None, 'lat': None, 'lon': None, 'icao': None, 'ground': None}        
+                ultimo_info = {
+                    'ts_kafka': row['ts_kafka'],
+
+                    'velocity': None,
+                    'lat': None,
+                    'lon': None,
+                    'icao': None,
+                    'ground': None,
+                    'direccion': None,
+                    #'velocity_manual': None,
+                }
             
             ultimo_info['icao'] = row['ICAO']
 
             typecode = row["TC"]
-            if ((typecode >= 9 and typecode <= 18) or (typecode >= 20 and typecode <= 22)):
+            if (airPosClass.match(typecode)):
                 ultimo_info["lat"], ultimo_info["lon"] = getAirbornePosition(row["messageHex"])
-            elif (typecode == 19):
+            if (surPosClass.match(typecode)):
+                ultimo_info["surf_vel"] = getSurfaceVelocity(row["messageHex"])
+                ultimo_info["surf_lat"], ultimo_info["surf_lon"] = getSurfacePosition(row["messageHex"])
+            elif (velClass.match(typecode)):
                 ultimo_info["velocity"], _, _, _ = pms.adsb.velocity(row["messageHex"])
             elif (row["DL"] == 11):
                 ultimo_info['ground'] = row["OnGround"]
+
+            prev_time = row['ts_kafka']
 
         except Exception as e:
             with open("errores.log", "a") as archivo:
@@ -95,7 +159,8 @@ meta = {
     "lat": float,
     "lon": float,
     "icao": str,
-    "ground": int
+    "ground": int,
+    "direccion": None,
 }
 
 
