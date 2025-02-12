@@ -13,4 +13,6 @@ dependencies = [
     "folium>=0.19.4",
     "dask>=2025.1.0",
     "pyarrow==17.0.0",
+    "plotly>=6.0.0",
+    "dash>=2.18.2",
 ]

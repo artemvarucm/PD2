@@ -1,0 +1,48 @@
+
+h1 {
+    color: black;
+    text-align: center;
+    padding: 20px 0;
+    background-color: #f0f0f0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ccc;
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+}
+
+header {
+    background-color: #333;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    color: #fff;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    margin: 0;
+}
+
+
+#parent {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#parent > div:nth-child(odd),
+#parent > div:nth-child(even) {
+    width: 50%;
+}
+
+
+#parent > div > div {
+    width: 100%;
+}
+
+#g4 {
+    width: 35%; /* Ancho personalizado */
+}
+
+#heatmap {
+    width: 80%; /* Puedes ajustar el ancho como desees */
+}
