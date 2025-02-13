@@ -3,6 +3,7 @@ import pandas as pd
 from dask.diagnostics import ProgressBar
 import pyModeS as pms
 from utils import *
+import math
 
 def getAirbornePosition(hex):
     RAD_LAT = 40.51
@@ -40,7 +41,27 @@ def getSurfaceVelocity(hex):
         else:
             return None  # RESERVED
 
-df = dd.read_csv("test.csv", sep=";")
+def dotproduct(v1, v2):
+  return sum((a*b) for a, b in zip(v1, v2))
+
+def length(v):
+  return math.sqrt(dotproduct(v, v))
+
+def angle(v1, v2):
+  return math.acos(dotproduct(v1, v2) / (10e-6 + (length(v1) * length(v2))))
+
+"""
+Angulo con el vector que representa el ESTE (en radianes)
+"""
+def calcularDireccion(lat1, lon1, lat2, lon2):
+    if lat1 is None or lat2 is None or lon1 is None or lon2 is None:
+        return None
+
+    vectorCentrado = [lon2 - lon1, lat2 - lat1]
+    vectorEste = [1, 0]
+    return angle(vectorCentrado, vectorEste)
+
+df = dd.read_csv("archivo_dividido_1.csv", sep=";")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
 df["DL"] = df["messageHex"].apply(getDownlink, meta=int)
@@ -160,6 +181,14 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
         del ultimo_info['surf_lat']
         del ultimo_info['surf_lon']
         ultimo_info['ts_kafka'] = prev_time
+        if len(eventos) > 0:
+            direccion1 =  calcularDireccion(eventos[-1]['lat'], eventos[-1]['lon'], ultimo_info['lat'], ultimo_info['lon'])
+            # para mayor precision
+            if len(eventos) > 1:
+                direccion1 = calcularDireccion(eventos[-2]['lat'], eventos[-2]['lon'], ultimo_info['lat'], ultimo_info['lon'])
+            
+            ultimo_info['direccion'] = direccion1
+
         eventos.append(ultimo_info)
 
     return pd.DataFrame(eventos)
