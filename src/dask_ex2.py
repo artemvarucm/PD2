@@ -16,7 +16,7 @@ def getSurfacePosition(hex):
         lat, lon = pms.adsb.position_with_ref(hex, RAD_LAT, RAD_LON)
         return lat, lon
 
-def getSurfaceVelocity(self, hex):
+def getSurfaceVelocity(hex):
         binary_message = pms.hex2bin(hex)
         speedValue = int(binary_message[37:44], 2)
         if speedValue == 0:
@@ -40,7 +40,7 @@ def getSurfaceVelocity(self, hex):
         else:
             return None  # RESERVED
 
-df = dd.read_csv("202412010000_202412072359.csv", sep=";")
+df = dd.read_csv("test.csv", sep=";")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
 df["DL"] = df["messageHex"].apply(getDownlink, meta=int)
@@ -84,6 +84,9 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
         'icao': None,
         'ground': None,
         'direccion': None,
+        'surf_vel': None,
+        'surf_lat': None,
+        'surf_lon': None,
     }
     umbral = 5 * 60 * 1000 # 5 minutos
     
@@ -98,7 +101,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                 first = False
                 ultimo_info['ts_kafka'] = row['ts_kafka']
 
-            if (row['ts_kafka'] - ultimo_info['ts_kafka'] >= umbral):
+            if (int(row['ts_kafka']) - int(ultimo_info['ts_kafka']) >= umbral):
                 # Guardamos último estado de la ventana terminada
                 if ultimo_info['ground']:
                     ultimo_info['velocity'] = ultimo_info['surf_vel']
@@ -122,7 +125,9 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     'icao': None,
                     'ground': None,
                     'direccion': None,
-                    #'velocity_manual': None,
+                    'surf_vel': None,
+                    'surf_lat': None,
+                    'surf_lon': None,
                 }
             
             ultimo_info['icao'] = row['ICAO']
@@ -146,6 +151,14 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
 
     # Añade el último estado (la ventana no termina)
     if (prev_time is not None):
+        if ultimo_info['ground']:
+            ultimo_info['velocity'] = ultimo_info['surf_vel']
+            ultimo_info['lat'] = ultimo_info['surf_lat']
+            ultimo_info['lon'] = ultimo_info['surf_lon']
+
+        del ultimo_info['surf_vel']
+        del ultimo_info['surf_lat']
+        del ultimo_info['surf_lon']
         ultimo_info['ts_kafka'] = prev_time
         eventos.append(ultimo_info)
 
