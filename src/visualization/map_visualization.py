@@ -2,6 +2,7 @@ import folium
 import webbrowser
 import os
 import time
+import numpy as np
 
 
 class MapVisualization:
@@ -189,18 +190,16 @@ import random
 import time
 import pandas as pd
 
-df = pd.read_csv("data/ex1/icao_343694.csv", sep=",")
- 
-df["on_ground"] = True
-df["longitud"] = -3.55
-df["latitude"] = 40.53
+df = pd.read_csv("pruebaCSV5.csv", sep=",")
 print(df.shape)
 #df = df.loc[:50]
 for i, row in df.iterrows():
-    if row["on_ground"] and row["latitude"] is not None and row["longitud"] is not None:
-        m.addAirplane(row["icao"], row["latitude"]+(i*i)*0.1,row["longitud"]+(i*i)*0.1,row["on_ground"])
-    elif not ["on_ground"] and row["airborne_pos_lat"] is not None and row["airborne_pos_lon"] is not None:        
-        m.addAirplane(row["icao"], row["airborne_pos_lat"]+(i*i)*0.1,row["airborne_pos_lon"]+(i*i)*0.1,row["on_ground"])
+    print(f"ON GROOUND {row["ground"]}-- LAT -- {row["lat"]} LON -- {row["lon"]}")
+
+    if pd.notna(row["ground"]) and pd.notna(row["lat"]) and pd.notna(row["lon"]): #on ground
+        m.addAirplane(row["icao"], row["lat"],row["lon"],row["ground"])
+    #elif not ["ground"] and row["airborne_pos_lat"] is not None and row["airborne_pos_lon"] is not None:        
+    #    m.addAirplane(row["icao"], row["airborne_pos_lat"],row["airborne_pos_lon"],row["ground"])
     
 m.showMap()
 
