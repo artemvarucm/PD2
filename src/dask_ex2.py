@@ -11,6 +11,9 @@ def getAirbornePosition(hex):
     lat, lon = pms.adsb.airborne_position_with_ref(hex, RAD_LAT, RAD_LON)
     return lat, lon
 
+def getAirborneAltitude(hex):
+    return pms.adsb.altitude(hex)
+
 def getSurfacePosition(hex):
         RAD_LAT = 40.51
         RAD_LON = -3.53
@@ -61,6 +64,7 @@ def calcularDireccion(lat1, lon1, lat2, lon2):
     vectorEste = [1, 0]
     return angle(vectorCentrado, vectorEste)
 
+
 df = dd.read_csv("archivo_dividido_1.csv", sep=";")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
@@ -71,9 +75,34 @@ filtroDL = df["DL"].isin([11, 17, 18])
 filtroCorrupto = df["messageHex"].map(lambda x: msgIsCorrupted(x) == False, meta=bool)
 df = df[filtroDL & filtroCorrupto].reset_index()
 
+
 df["ICAO"] = df["messageHex"].apply(getICAO,meta=str)
-df["OnGround"] = df["messageHex"].apply(getOnGround,meta =int)
 df["TC"] = df["messageHex"].apply(getTypeCode,meta =int)
+
+def clean_row(full_row: dict, eventos: list):
+    """
+    Prepara la fila para insertar en el dataframe limpio
+    """
+    if full_row['ground']:
+        full_row['velocity'] = full_row['surf_vel']
+        full_row['lat'] = full_row['surf_lat']
+        full_row['lon'] = full_row['surf_lon']
+
+    del full_row['surf_vel']
+    del full_row['surf_lat']
+    del full_row['surf_lon']
+
+    if len(eventos) > 0:
+        direccion =  calcularDireccion(eventos[-1]['lat'], eventos[-1]['lon'], full_row['lat'], full_row['lon'])
+        if len(eventos) > 1: # para mayor precision
+            # hacemos la media de la direccion respecto penúltimo y dirección respecto el antepenúltimo
+            direccion_antepenultimo = calcularDireccion(eventos[-2]['lat'], eventos[-2]['lon'], full_row['lat'], full_row['lon'])
+            direccion = (direccion_antepenultimo + direccion) / 2
+        
+        full_row['direccion'] = direccion
+
+    return full_row
+
 
 def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     """
@@ -108,6 +137,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
         'surf_vel': None,
         'surf_lat': None,
         'surf_lon': None,
+        'alt_feet': None,
     }
     umbral = 5 * 60 * 1000 # 5 minutos
     
@@ -124,15 +154,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
 
             if (int(row['ts_kafka']) - int(ultimo_info['ts_kafka']) >= umbral):
                 # Guardamos último estado de la ventana terminada
-                if ultimo_info['ground']:
-                    ultimo_info['velocity'] = ultimo_info['surf_vel']
-                    ultimo_info['lat'] = ultimo_info['surf_lat']
-                    ultimo_info['lon'] = ultimo_info['surf_lon']
-
-                del ultimo_info['surf_vel']
-                del ultimo_info['surf_lat']
-                del ultimo_info['surf_lon']
-
+                ultimo_info = clean_row(ultimo_info, eventos)
                 ultimo_info['ts_kafka'] = prev_time
                 eventos.append(ultimo_info)
 
@@ -149,6 +171,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     'surf_vel': None,
                     'surf_lat': None,
                     'surf_lon': None,
+                    'alt_feet': None
                 }
             
             ultimo_info['icao'] = row['ICAO']
@@ -156,13 +179,14 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
             typecode = row["TC"]
             if (airPosClass.match(typecode)):
                 ultimo_info["lat"], ultimo_info["lon"] = getAirbornePosition(row["messageHex"])
+                ultimo_info["alt_feet"] = getAirborneAltitude(row["messageHex"])
             if (surPosClass.match(typecode)):
                 ultimo_info["surf_vel"] = getSurfaceVelocity(row["messageHex"])
                 ultimo_info["surf_lat"], ultimo_info["surf_lon"] = getSurfacePosition(row["messageHex"])
             elif (velClass.match(typecode)):
                 ultimo_info["velocity"], _, _, _ = pms.adsb.velocity(row["messageHex"])
             elif (row["DL"] == 11):
-                ultimo_info['ground'] = row["OnGround"]
+                ultimo_info['ground'] = getOnGround(row["messageHex"])
 
             prev_time = row['ts_kafka']
 
@@ -172,23 +196,8 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
 
     # Añade el último estado (la ventana no termina)
     if (prev_time is not None):
-        if ultimo_info['ground']:
-            ultimo_info['velocity'] = ultimo_info['surf_vel']
-            ultimo_info['lat'] = ultimo_info['surf_lat']
-            ultimo_info['lon'] = ultimo_info['surf_lon']
-
-        del ultimo_info['surf_vel']
-        del ultimo_info['surf_lat']
-        del ultimo_info['surf_lon']
+        ultimo_info = clean_row(ultimo_info, eventos)
         ultimo_info['ts_kafka'] = prev_time
-        if len(eventos) > 0:
-            direccion1 =  calcularDireccion(eventos[-1]['lat'], eventos[-1]['lon'], ultimo_info['lat'], ultimo_info['lon'])
-            # para mayor precision
-            if len(eventos) > 1:
-                direccion1 = calcularDireccion(eventos[-2]['lat'], eventos[-2]['lon'], ultimo_info['lat'], ultimo_info['lon'])
-            
-            ultimo_info['direccion'] = direccion1
-
         eventos.append(ultimo_info)
 
     return pd.DataFrame(eventos)
@@ -202,7 +211,8 @@ meta = {
     "lon": float,
     "icao": str,
     "ground": int,
-    "direccion": None,
+    "direccion": float,
+    'alt_feet': float,
 }
 
 
