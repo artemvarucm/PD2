@@ -2,6 +2,7 @@ import folium
 import webbrowser
 import os
 import time
+import numpy as np
 
 
 class MapVisualization:
@@ -143,16 +144,26 @@ class MapVisualization:
         self.layers['aviones'].add_to(self.mapa)
         self.layers['rutas'].add_to(self.mapa)
 
-    def addAirplane(self, id_avion, latitud, longitud, on_ground):
+    def addAirplane(self, id_avion, latitud, longitud, on_ground, velocidad=0):
         if id_avion not in self.aviones:
-            self.aviones[id_avion] = {'ruta':[], 'onGround':None}
+            self.aviones[id_avion] = {'ruta':[], 'velocidad': [], 'onGround':None}
         
-        self.aviones[id_avion]['ruta'].append((latitud, longitud))
+        self.aviones[id_avion]['ruta'].append((round(latitud,3), round(longitud,3)))
+        self.aviones[id_avion]['ruta'].append((round(latitud,3), round(longitud,3)))
         self.aviones[id_avion]['onGround'] = on_ground
 
     # PINTAR RUTAS DE AVIONES
     def paintRoute(self, ruta):
         folium.PolyLine(ruta, color="blue", weight=2.5, opacity=1).add_to(self.layers['rutas'])
+        """
+        colors = ["blue", "red", "green", "purple", "orange", "yellow"]
+        
+        # Recorrer los puntos de la ruta de dos en dos para dibujar los segmentos
+        for i in range(len(ruta) - 1):
+            color = random.choice(colors)  # Elige un color aleatorio
+            folium.PolyLine(
+                [ruta[i], ruta[i + 1]], color=color, weight=2.5, opacity=1
+            ).add_to(self.layers['rutas'])"""
 
     def saveMap(self, nombre_mapa):
         self.mapa.save(f"./mapas/{nombre_mapa}.html")
@@ -177,20 +188,19 @@ class MapVisualization:
 m = MapVisualization()
 import random
 import time
-i = 0.01
-for k in range(5):
-    m.addAirplane("DHABE138", 40.51+i, -3.53+i, False)
-    i=i+0.01
+import pandas as pd
+
+df = pd.read_csv("pruebaCSV5.csv", sep=",")
+print(df.shape)
+#df = df.loc[:50]
+for i, row in df.iterrows():
+    print(f"ON GROOUND {row["ground"]}-- LAT -- {row["lat"]} LON -- {row["lon"]}")
+
+    if pd.notna(row["ground"]) and pd.notna(row["lat"]) and pd.notna(row["lon"]): #on ground
+        m.addAirplane(row["icao"], row["lat"],row["lon"],row["ground"])
+    #elif not ["ground"] and row["airborne_pos_lat"] is not None and row["airborne_pos_lon"] is not None:        
+    #    m.addAirplane(row["icao"], row["airborne_pos_lat"],row["airborne_pos_lon"],row["ground"])
     
-m.showMap()
-time.sleep(1)
-m.addAirplane("DHABE438", 40.51-i-0.03, -3.53-i-0.03, False)
-m.showMap()
-time.sleep(1)
-m.addAirplane("DHABE138", 40.51+i+0.05, -3.53+i+0.05, False)
-m.showMap()
-time.sleep(1)
-m.addAirplane("DHABE438", 40.51-i-0.05, -3.53-i-0.05, False)
 m.showMap()
 
 
