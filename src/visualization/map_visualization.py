@@ -2,7 +2,8 @@ import folium
 import webbrowser
 import os
 import time
-import numpy as np
+import time
+import pandas as pd
 
 
 class MapVisualization:
@@ -138,32 +139,56 @@ class MapVisualization:
     
     def paintAirplanes(self):
         for id_avion in self.aviones:
-            self.paintAirplane(id_avion, self.aviones[id_avion]['ruta'][-1][0], self.aviones[id_avion]['ruta'][-1][1], self.aviones[id_avion]['onGround'])
-            self.paintRoute(self.aviones[id_avion]['ruta'])
+            self.paintAirplane(id_avion, self.aviones[id_avion]['rutas']['ruta_principal'][-1][0], self.aviones[id_avion]['rutas']['ruta_principal'][-1][1], self.aviones[id_avion]['onGround'])
+            self.paintRoute(id_avion)
         
         self.layers['aviones'].add_to(self.mapa)
         self.layers['rutas'].add_to(self.mapa)
 
     def addAirplane(self, id_avion, latitud, longitud, on_ground, velocidad=0):
         if id_avion not in self.aviones:
-            self.aviones[id_avion] = {'ruta':[], 'velocidad': [], 'onGround':None}
+            self.aviones[id_avion] = {'rutas':{'ruta_principal': [], 'ruta_rapida': [], 'ruta_media': [], 'ruta_lenta':[], 'ultima_velocidad': None}, 'onGround':None}
         
-        self.aviones[id_avion]['ruta'].append((round(latitud,3), round(longitud,3)))
-        self.aviones[id_avion]['ruta'].append((round(latitud,3), round(longitud,3)))
+        self.aviones[id_avion]['rutas']['ruta_principal'].append((round(latitud,3), round(longitud,3)))
+
+        nuevoTipoVelocidad = self.getVelocityType(velocidad)
+        
+        if self.aviones[id_avion]['rutas']['ultima_velocidad'] is None:
+            self.aviones[id_avion]['rutas']['ultima_velocidad'] = nuevoTipoVelocidad
+            self.aviones[id_avion]['rutas'][nuevoTipoVelocidad].append(len(self.aviones[id_avion]['rutas']['ruta_principal']) - 1)
+            self.aviones[id_avion]['rutas'][nuevoTipoVelocidad].append(len(self.aviones[id_avion]['rutas']['ruta_principal']))
+        else:
+            self.updateTramosVelocidad(id_avion, nuevoTipoVelocidad)
+
         self.aviones[id_avion]['onGround'] = on_ground
 
-    # PINTAR RUTAS DE AVIONES
-    def paintRoute(self, ruta):
-        folium.PolyLine(ruta, color="blue", weight=2.5, opacity=1).add_to(self.layers['rutas'])
-        """
-        colors = ["blue", "red", "green", "purple", "orange", "yellow"]
+    def updateTramosVelocidad(self, id_avion, nuevoTipoVelocidad):
+        if nuevoTipoVelocidad == self.aviones[id_avion]['rutas']['ultima_velocidad']:
+            self.aviones[id_avion]['rutas'][nuevoTipoVelocidad][-1] = len(self.aviones[id_avion]['rutas']['ruta_principal'])
+        else:
+            self.aviones[id_avion]['rutas'][nuevoTipoVelocidad].append(self.aviones[id_avion]['rutas'][self.aviones[id_avion]['rutas']['ultima_velocidad']][-1])
+            self.aviones[id_avion]['rutas'][nuevoTipoVelocidad].append(self.aviones[id_avion]['rutas'][self.aviones[id_avion]['rutas']['ultima_velocidad']][-1]+1)
+            self.aviones[id_avion]['rutas']['ultima_velocidad'] = nuevoTipoVelocidad
         
-        # Recorrer los puntos de la ruta de dos en dos para dibujar los segmentos
-        for i in range(len(ruta) - 1):
-            color = random.choice(colors)  # Elige un color aleatorio
-            folium.PolyLine(
-                [ruta[i], ruta[i + 1]], color=color, weight=2.5, opacity=1
-            ).add_to(self.layers['rutas'])"""
+    def getVelocityType(self, velocidad):
+        if velocidad <= 60:
+            return "ruta_lenta"
+        elif velocidad <= 80:
+            return "ruta_media"
+        else:
+            return "ruta_rapida"
+        
+
+    # PINTAR RUTAS DE AVIONES
+    def paintRoute(self, id_avion):
+        rutas = ['ruta_lenta', 'ruta_rapida', 'ruta_media']
+        colores = {'ruta_rapida': 'red', 'ruta_media': 'orange', 'ruta_lenta':'green'}
+        
+        for tipo_ruta in rutas:
+            for r in range(0, len(self.aviones[id_avion]['rutas'][tipo_ruta]), 2):
+                folium.PolyLine(self.aviones[id_avion]['rutas']['ruta_principal'][self.aviones[id_avion]['rutas'][tipo_ruta][r]:self.aviones[id_avion]['rutas'][tipo_ruta][r+1]+1], color=colores[tipo_ruta], weight=2.5, opacity=1).add_to(self.layers['rutas'])
+                
+            
 
     def saveMap(self, nombre_mapa):
         self.mapa.save(f"./mapas/{nombre_mapa}.html")
@@ -186,21 +211,30 @@ class MapVisualization:
 
 
 m = MapVisualization()
-import random
-import time
-import pandas as pd
-
-df = pd.read_csv("pruebaCSV5.csv", sep=",")
-print(df.shape)
+df = pd.read_csv("data/ex1/icao_343694.csv")
+df["velocidad"] = 10
+df.loc[3000:15000, "velocidad"] = 70
+df.loc[15000:23000, "velocidad"] = 100
+df["on_ground"] = True
+i = 0
 #df = df.loc[:50]
-for i, row in df.iterrows():
-    print(f"ON GROOUND {row["ground"]}-- LAT -- {row["lat"]} LON -- {row["lon"]}")
+for _, row in df.iterrows():
+    row["longitud"] = -3.53 + i
+    print(f"ON GROOUND {row["on_ground"]}-- LAT -- {row["latitude"]} LON -- {row["longitud"]}")
+    if pd.notna(row["on_ground"]) and pd.notna(row["latitude"]) and pd.notna(row["longitud"]): #on ground
+        m.addAirplane(row["icao"], row["latitude"]+i,row["longitud"],row["on_ground"], row["velocidad"])
+        i=i+0.01
+"""
+m.addAirplane("jnsfu", 40.52, -3.53, True, 10)
+m.addAirplane("jnsfu", 40.55, -3.55, False, 70)
+m.addAirplane("jnsfu", 40.56, -3.56, False, 70)
+m.addAirplane("jnsfu", 40.57, -3.57, False, 90)
+m.addAirplane("jnsfu", 40.70, -3.80, True, 90)
+m.addAirplane("jnsfu", 40.71, -3.82, False, 10)
+m.addAirplane("jnsfu", 40.74, -3.82, False, 10)
 
-    if pd.notna(row["ground"]) and pd.notna(row["lat"]) and pd.notna(row["lon"]): #on ground
-        m.addAirplane(row["icao"], row["lat"],row["lon"],row["ground"])
-    #elif not ["ground"] and row["airborne_pos_lat"] is not None and row["airborne_pos_lon"] is not None:        
-    #    m.addAirplane(row["icao"], row["airborne_pos_lat"],row["airborne_pos_lon"],row["ground"])
-    
+print(m.aviones["jnsfu"]['rutas'])
+"""
 m.showMap()
 
 
