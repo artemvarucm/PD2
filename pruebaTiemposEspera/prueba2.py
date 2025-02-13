@@ -52,12 +52,18 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     grupo = grupo.sort_values("timestamp")
     eventos = []
     ultimo_parado = None
+    aircraftType = None
 
     for _, row in grupo.iterrows():
         # Si el mensaje es de superficie y se puede decodificar la velocidad,
         # y esta es exactamente 0, se considera que el avión está parado.
+        if ((row["Tc"] > 0) & (row["Tc"] < 5)):
+            if ((row["AircraftType"] not in ["No category information", "Reserved", "ERROR"]) | (row["TC"] != 1)):
+                aircraftType = row["AircraftType"]
+        
         if pd.notna(row.get("surface_velocity")) and row["surface_velocity"] == 0:
             ultimo_parado = row["timestamp"]
+        
         # Cuando se detecta que el avión ya está en aire (OnGround == 0)
         if ((row["OnGround"] == 0) & (row["DL"] == 11)):
             if ultimo_parado is not None:
@@ -67,7 +73,8 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     "ICAO": row["ICAO"],
                     "ultimo_parado": ultimo_parado,
                     "despegue": tiempo_despegue,
-                    "tiempo_espera": tiempo_espera
+                    "tiempo_espera": tiempo_espera,
+                    "aircraft_type": aircraftType
                 })
                 # Reiniciamos la marca para detectar el siguiente vuelo
                 ultimo_parado = None
@@ -79,7 +86,8 @@ meta = {
     "ICAO": str,
     "ultimo_parado": "datetime64[ns]",
     "despegue": "datetime64[ns]",
-    "tiempo_espera": float
+    "tiempo_espera": float,
+    "aircraft_type":str
 }
 
 
