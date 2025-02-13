@@ -4,6 +4,7 @@ from dask.diagnostics import ProgressBar
 import pyModeS as pms
 from utils import *
 import math
+import logging
 
 def getAirbornePosition(hex):
     RAD_LAT = 40.51
@@ -93,11 +94,14 @@ def clean_row(full_row: dict, eventos: list):
     del full_row['surf_lon']
 
     if len(eventos) > 0:
-        direccion =  calcularDireccion(eventos[-1]['lat'], eventos[-1]['lon'], full_row['lat'], full_row['lon'])
+        direccion = calcularDireccion(eventos[-1]['lat'], eventos[-1]['lon'], full_row['lat'], full_row['lon'])
         if len(eventos) > 1: # para mayor precision
             # hacemos la media de la direccion respecto penúltimo y dirección respecto el antepenúltimo
             direccion_antepenultimo = calcularDireccion(eventos[-2]['lat'], eventos[-2]['lon'], full_row['lat'], full_row['lon'])
-            direccion = (direccion_antepenultimo + direccion) / 2
+            if direccion is None:
+                direccion = direccion_antepenultimo
+            elif direccion_antepenultimo is not None:
+                direccion = (direccion_antepenultimo + direccion) / 2
         
         full_row['direccion'] = direccion
 
@@ -146,6 +150,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     airPosClass = AirbornePositionMessage()
     velClass = AirborneVelocity()
     surPosClass = SurfacePositionMessage()
+    logging.basicConfig(filename='errores.log', encoding='utf-8')
     for _, row in grupo.iterrows():
         try:
             if first:
@@ -189,10 +194,9 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                 ultimo_info['ground'] = getOnGround(row["messageHex"])
 
             prev_time = row['ts_kafka']
-
         except Exception as e:
-            with open("errores.log", "a") as archivo:
-                archivo.write(f"Error: {str(e)}\n")
+            logging.error(f'ERROR_DATOS\n{row}')
+            logging.exception(e)
 
     # Añade el último estado (la ventana no termina)
     if (prev_time is not None):
