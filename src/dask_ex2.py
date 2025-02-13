@@ -66,7 +66,7 @@ def calcularDireccion(lat1, lon1, lat2, lon2):
     return angle(vectorCentrado, vectorEste)
 
 
-df = dd.read_csv("archivo_dividido_1.csv", sep=";")
+df = dd.read_csv("202412010000_202412072359.csv", sep=";")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
 df["DL"] = df["messageHex"].apply(getDownlink, meta=int)
