@@ -5,7 +5,10 @@ import time
 import time
 import pandas as pd
 from plugins.geocoder import Geocoder
-
+from plugins.day_and_night import DayAndNight
+from plugins.full_screen import Fullscreen
+from plugins.locate_user import LocateUser
+from plugins.mouse_position import MousePosition
 
 class MapVisualization:
     def __init__(self):
@@ -37,7 +40,7 @@ class MapVisualization:
     # INICIALIZACION MAPA
     def createMap(self, latitud=40.51, longitud=-3.53):
         """Crea un mapa. Al abrirse hace zoom en la localizacion indicada"""
-        mapa = folium.Map(location=[latitud, longitud], zoom_start=12)
+        mapa = folium.Map(location=[latitud, longitud], zoom_start=12, zoom_control=False)
         return mapa
 
     def initializeMap(self, all=False):
@@ -274,10 +277,26 @@ class MapVisualization:
 
      # FUNCIONALIDADES EXTRAS EN EL MAPA
     def addGeocoder(self):
-        Geocoder(collapsed=True, add_marker=False, zoom=12).add_to(self.mapa)
+        Geocoder(collapsed=True, position="topleft",add_marker=False, zoom=12).add_to(self.mapa)
+
+    def addDayAndNight(self):
+        DayAndNight().add_to(self.mapa)
+    
+    def addFullScreen(self):
+        Fullscreen(position="bottomright").add_to(self.mapa)
+
+    def addLocateUser(self):
+        LocateUser(position="topleft").add_to(self.mapa)
+    
+    def addMousePosition(self):
+        MousePosition(position="bottomleft", separator=",", num_digits=3).add_to(self.mapa)
 
     def addExtraFeatures(self):
         self.addGeocoder()
+        self.addDayAndNight()
+        self.addFullScreen()
+        self.addLocateUser()
+        self.addMousePosition()
 
 
     # GESTIÓN DEL MAPA RESULTANTE
@@ -308,7 +327,6 @@ class MapVisualization:
         """Borra las capas que varían con el tiempo (aviones y rutas)"""
         self.mapa = self.createMap()
         self.initializeMap(all=False)
-
 
 m = MapVisualization()
 """

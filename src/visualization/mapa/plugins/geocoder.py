@@ -1,3 +1,5 @@
+# Extraido de https://github.com/python-visualization/folium/tree/main/folium/plugins
+
 from typing import Optional
 
 from branca.element import MacroElement
@@ -55,11 +57,11 @@ class Geocoder(JSCSSMixin, MacroElement):
             // Cambiar el icono
             var button = document.querySelector('.leaflet-control-geocoder-icon');
             if (button) {
-                button.innerHTML = "🌍";  // Cambia el icono a un globo
+                button.innerHTML = "🌍";  // https://emojiterra.com/es/globo-europa-africa/
                 button.style.fontSize = "20px";  
-                button.style.backgroundImage = "none";  // Elimina cualquier imagen de fondo
+                button.style.backgroundImage = "none";  
                 button.style.textAlign = "center";  
-                button.style.width = "30px";  // Ajusta el tamaño del botón
+                button.style.width = "30px";  
                 button.style.height = "30px";  
                 button.style.display = "flex";
                 button.style.alignItems = "center";
@@ -67,6 +69,7 @@ class Geocoder(JSCSSMixin, MacroElement):
 
             }
 
+            // Cambiar barra busqueda
             var searchBox = document.querySelector('.leaflet-control-geocoder-form input');
             if (searchBox) {
                 searchBox.placeholder = "Introduzca ubicación";
