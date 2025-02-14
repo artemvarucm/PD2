@@ -123,13 +123,3 @@ m.addAirplane("la", 40.71, -3.82, False, 10,2)
 m.addAirplane("la", 40.71, -3.82, False, 10,2)
 m.showMap()
 
-m.reset()
-time.sleep(1)
-m.showMap()
-
-time.sleep(1)
-m.addAirplane("jnsfu", 40.52, -3.53, True, 10,1)
-m.addAirplane("jnsfu", 40.55, -3.55, False, 70,2)
-m.addAirplane("jnsfu", 40.56, -3.56, False, 70,3)
-m.showMap()
-

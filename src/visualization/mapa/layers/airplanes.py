@@ -1,5 +1,6 @@
-import folium, branca, plotly.express as px
+import folium, branca, plotly.express as px, numpy as np
 from .routes import Routes
+
 
 class Airplanes:
     capa_aviones = folium.FeatureGroup(name="Aviones")
@@ -35,12 +36,31 @@ class Airplanes:
 
     @staticmethod
     def generateImageHeights(id_avion):
-        fig = px.line(x=range(len(Airplanes.aviones[id_avion]["alturas"])), y=Airplanes.aviones[id_avion]["alturas"], title='Alturas del avión con el paso del tiempo')
-
+        x = np.arange(len(Airplanes.aviones[id_avion]["alturas"]))
+        y = Airplanes.aviones[id_avion]["alturas"]
+        fig = px.line(x=x, y=y,  width=600, height=400, markers=True)
+        fig.update_layout(
+                    #margin=dict(l=100, r=100, t=100, b=100),
+                    title_text='Alturas del avión con el paso del tiempo',
+                    title_x=0.5,
+                    yaxis_title="Altura",
+                    yaxis = dict(
+                        showgrid= False
+                    ),     
+                    xaxis_title="Nº Mensaje",      
+                    xaxis = dict(
+                        tickmode='array',
+                        tickvals = x, 
+                        ticktext = x, 
+                        showgrid= False
+                    ),
+                   font=dict(size=12, color="black")
+                )
+        
         html = fig.to_html(full_html=False, include_plotlyjs='cdn')
 
-        iframe = branca.element.IFrame(html=html, width=500, height=300)
-        popup = folium.Popup(iframe, max_width=500)
+        iframe = branca.element.IFrame(html=html, width=620, height=420)
+        popup = folium.Popup(iframe)
         return popup
 
     @staticmethod
