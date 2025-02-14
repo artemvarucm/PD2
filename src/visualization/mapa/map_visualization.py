@@ -50,15 +50,7 @@ class MapVisualization:
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
     def addAirplane(self, id_avion, latitud, longitud, on_ground, velocidad):
-        """Añade el avión para que pueda ser pintado en el mapa.
-        De cada avión se guarda:
-                                ruta_principal: La ruta que ha seguido el avión hasta el momento
-                                ruta_rapida: Guarda los índices de la ruta_principal donde el avión haya ido rápido
-                                ruta_media: Guarda los índices de la ruta_principal donde el avión haya ido a una velocidad media
-                                ruta_lenta: Guarda los índices de la ruta_principal donde el avión haya ido lento
-                                ultima_velocidad: Nos ayuda gestionar las rutas que guardan información sobre la velocidad del avión en los distintos tramos de la ruta principal
-                                onGround: Inidca si el avión está en tierra o en aire"""
-
+        """Añade el avión para que pueda ser pintado en el mapa. Además, también servirá para pintar su ruta"""
         Airplanes.addAirplane(id_avion, latitud, longitud, on_ground, velocidad)
 
     def deleteAirplane(self, id_avion):
