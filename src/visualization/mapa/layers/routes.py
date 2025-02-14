@@ -90,4 +90,10 @@ class Routes:
         """Borra el avión"""
         if id_avion in Routes.ruta_aviones:
             del Routes.ruta_aviones[id_avion]
+    
+    @staticmethod
+    def reset():
+        Routes.ruta_aviones = dict()
+        Routes.capa_rutas = folium.FeatureGroup(name="Rutas")
+        
 

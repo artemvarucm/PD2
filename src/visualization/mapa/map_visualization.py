@@ -8,7 +8,7 @@ class MapVisualization:
     def __init__(self):
         self.mapa = self.createMap()
         self.layerControl = folium.LayerControl(collapsed=False, sortLayers=True)
-
+        
         self.initializeMap(all=True)
 
     # INICIALIZACION MAPA
@@ -21,16 +21,13 @@ class MapVisualization:
         """Inicializa el mapa base. En caso de all=True inicializa el mapa desde 0, pintando las pistas de aterrizaje y el radar.
         En caso contrario, simplemente restaura las capas que varian con el tiempo (aviones y rutas)
         """
-        if all:
-            self.paintRadars()
-            self.paintLandingStrips()
-        else:
+        if not all:
             Airplanes.reset()
 
-        self.addLayers()
+        self.addAllLayers()
         self.layerControl.add_to(self.mapa)
 
-    def addLayers(self):
+    def addAllLayers(self):
         """Añade todas las capas del mapa"""
         self.paintRadars()
         self.paintLandingStrips()
@@ -124,5 +121,15 @@ m.addAirplane("la", 40.52, -3.53, False, 90,4)
 m.addAirplane("la", 40.70, -3.80, True, 90,3)
 m.addAirplane("la", 40.71, -3.82, False, 10,2)
 m.addAirplane("la", 40.71, -3.82, False, 10,2)
+m.showMap()
+
+m.reset()
+time.sleep(1)
+m.showMap()
+
+time.sleep(1)
+m.addAirplane("jnsfu", 40.52, -3.53, True, 10,1)
+m.addAirplane("jnsfu", 40.55, -3.55, False, 70,2)
+m.addAirplane("jnsfu", 40.56, -3.56, False, 70,3)
 m.showMap()
 

@@ -98,5 +98,7 @@ class Airplanes:
     
     @staticmethod
     def reset():
-        Airplanes.capa_aviones = folium.FeatureGroup(name="Aviones")
         Airplanes.aviones = dict()
+        Airplanes.capa_aviones = folium.FeatureGroup(name="Aviones")
+        Routes.reset()
+        
