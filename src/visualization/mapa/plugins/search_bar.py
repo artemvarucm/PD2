@@ -134,6 +134,7 @@ class SearchBar(JSCSSMixin, MacroElement):
         ), "Search can only be added to folium Map objects."
 
     def render(self, **kwargs):
+        keys = None
         if isinstance(self.layer, GeoJson):
             keys = tuple(self.layer.data["features"][0]["properties"].keys())
         elif isinstance(self.layer, TopoJson):
@@ -143,8 +144,9 @@ class SearchBar(JSCSSMixin, MacroElement):
                     "properties"
                 ].keys()
             )  # noqa
-        else:
-            keys = None
+        elif isinstance(self.layer, FeatureGroup):
+            keys = ["icao"]
+            
         self.test_params(keys=keys)
 
         super().render(**kwargs)

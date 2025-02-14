@@ -73,6 +73,7 @@ class Airplanes:
                 Airplanes.createDescriptionAirplane(id_avion, latitud, longitud),
                 max_width=300,
             ),
+            icao=id_avion,
             popup=Airplanes.generateImageHeights(id_avion),
             icon=Airplanes.airplaneIcon(on_ground),
         ).add_to(Airplanes.capa_aviones)

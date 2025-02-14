@@ -3,6 +3,7 @@ from plugins.extra_features import ExtraFeatures
 from layers.radars import Radars
 from layers.landing_strips import LandingStrips
 from layers.airplanes import Airplanes
+from plugins.search_bar import SearchBar
 
 class MapVisualization:
     def __init__(self):
@@ -58,6 +59,19 @@ class MapVisualization:
     def addExtraFeatures(self):
         """Añade funcionalidades extras al mapa"""
         ExtraFeatures().addExtraFeatures(self.mapa)
+        MapVisualization.addSearchBar(self.mapa, Airplanes.capa_aviones)
+
+    @staticmethod
+    def addSearchBar(mapa, capa):
+        """Añade la búsqueda del avión por icao"""
+        SearchBar(
+            layer=capa,
+            #geom_type="Point",
+            placeholder="Busca por ICAO",
+            collapsed=False,
+            search_label="icao",
+            weight=3,
+        ).add_to(mapa)
 
     # GESTIÓN DEL MAPA RESULTANTE
     def saveMap(self, nombre_mapa):
