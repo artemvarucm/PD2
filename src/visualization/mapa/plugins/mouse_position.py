@@ -1,3 +1,5 @@
+# Extraido de https://github.com/python-visualization/folium/tree/main/folium/plugins
+
 from branca.element import MacroElement
 
 from folium.elements import JSCSSMixin

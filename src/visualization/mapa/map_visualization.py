@@ -4,11 +4,8 @@ import os
 import time
 import time
 import pandas as pd
-from plugins.geocoder import Geocoder
-from plugins.day_and_night import DayAndNight
-from plugins.full_screen import Fullscreen
-from plugins.locate_user import LocateUser
-from plugins.mouse_position import MousePosition
+from plugins.extra_features import ExtraFeatures
+
 
 class MapVisualization:
     def __init__(self):
@@ -276,28 +273,9 @@ class MapVisualization:
 
 
      # FUNCIONALIDADES EXTRAS EN EL MAPA
-    def addGeocoder(self):
-        Geocoder(collapsed=True, position="topleft",add_marker=False, zoom=12).add_to(self.mapa)
-
-    def addDayAndNight(self):
-        DayAndNight().add_to(self.mapa)
-    
-    def addFullScreen(self):
-        Fullscreen(position="bottomright").add_to(self.mapa)
-
-    def addLocateUser(self):
-        LocateUser(position="topleft").add_to(self.mapa)
-    
-    def addMousePosition(self):
-        MousePosition(position="bottomleft", separator=",", num_digits=3).add_to(self.mapa)
-
     def addExtraFeatures(self):
-        self.addGeocoder()
-        self.addDayAndNight()
-        self.addFullScreen()
-        self.addLocateUser()
-        self.addMousePosition()
-
+        """Añade funcionalidades extras al mapa"""
+        ExtraFeatures().addExtraFeatures(self.mapa)
 
     # GESTIÓN DEL MAPA RESULTANTE
     def saveMap(self, nombre_mapa):
@@ -307,9 +285,9 @@ class MapVisualization:
     def showMap(self, nombre_mapa=None):
         """Muestra el mapa. En caso de no especificar el nombre, este será la fecha en la que se ha ejecutado la función"""
 
-        self.paintAirplanes()
         self.addExtraFeatures()
-
+        self.paintAirplanes()
+        
         if nombre_mapa is None:
             nombre_mapa = time.strftime("%d-%m-%Y_%H-%M-%S")
 
