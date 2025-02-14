@@ -49,14 +49,13 @@ class MapVisualization:
         Airplanes.paintAirplanes(self.mapa)
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
-    def addAirplane(self, id_avion, latitud, longitud, on_ground, velocidad):
+    def addAirplane(self, id_avion, latitud, longitud, on_ground, velocidad, altura):
         """Añade el avión para que pueda ser pintado en el mapa. Además, también servirá para pintar su ruta"""
-        Airplanes.addAirplane(id_avion, latitud, longitud, on_ground, velocidad)
+        Airplanes.addAirplane(id_avion, latitud, longitud, on_ground, velocidad, altura)
 
     def deleteAirplane(self, id_avion):
         """Borra el avión"""
         Airplanes.deleteAirplane(id_avion)
-
 
      # FUNCIONALIDADES EXTRAS EN EL MAPA
     def addExtraFeatures(self):
@@ -118,13 +117,12 @@ for _, row in df.iterrows():
         )
         i = i + 0.01
 """
-m.addAirplane("jnsfu", 40.52, -3.53, True, 10)
-m.addAirplane("jnsfu", 40.55, -3.55, False, 70)
-m.addAirplane("jnsfu", 40.56, -3.56, False, 70)
-m.addAirplane("la", 40.52, -3.53, False, 90)
-m.addAirplane("la", 40.70, -3.80, True, 90)
-m.addAirplane("la", 40.71, -3.82, False, 10)
-m.addAirplane("la", 40.74, -3.82, False, 10)
-
+m.addAirplane("jnsfu", 40.52, -3.53, True, 10,1)
+m.addAirplane("jnsfu", 40.55, -3.55, False, 70,2)
+m.addAirplane("jnsfu", 40.56, -3.56, False, 70,3)
+m.addAirplane("la", 40.52, -3.53, False, 90,4)
+m.addAirplane("la", 40.70, -3.80, True, 90,3)
+m.addAirplane("la", 40.71, -3.82, False, 10,2)
+m.addAirplane("la", 40.71, -3.82, False, 10,2)
 m.showMap()
 

@@ -84,4 +84,10 @@ class Routes:
             return "ruta_media"
         else:
             return "ruta_rapida"
+    
+    @staticmethod
+    def deleteAirplane(id_avion):
+        """Borra el avión"""
+        if id_avion in Routes.ruta_aviones:
+            del Routes.ruta_aviones[id_avion]
 

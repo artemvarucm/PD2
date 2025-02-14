@@ -1,4 +1,4 @@
-import folium
+import folium, branca, plotly.express as px
 from .routes import Routes
 
 class Airplanes:
@@ -34,14 +34,26 @@ class Airplanes:
         return icon
 
     @staticmethod
+    def generateImageHeights(id_avion):
+        fig = px.line(x=range(len(Airplanes.aviones[id_avion]["alturas"])), y=Airplanes.aviones[id_avion]["alturas"], title='Alturas del avión con el paso del tiempo')
+
+        html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+        iframe = branca.element.IFrame(html=html, width=500, height=300)
+        popup = folium.Popup(iframe, max_width=500)
+        return popup
+
+    @staticmethod
     def paintAirplane(id_avion, latitud, longitud, on_ground):
         """Pinta el avión en el mapa"""
+
         folium.Marker(
             location=[latitud, longitud],
             tooltip=folium.Tooltip(
                 Airplanes.createDescriptionAirplane(id_avion, latitud, longitud),
                 max_width=300,
             ),
+            popup=Airplanes.generateImageHeights(id_avion),
             icon=Airplanes.airplaneIcon(on_ground),
         ).add_to(Airplanes.capa_aviones)
 
@@ -62,15 +74,8 @@ class Airplanes:
    
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
     @staticmethod
-    def addAirplane(id_avion, latitud, longitud, on_ground, velocidad):
-        """Añade el avión para que pueda ser pintado en el mapa.
-        De cada avión se guarda:
-                                ruta_principal: La ruta que ha seguido el avión hasta el momento
-                                ruta_rapida: Guarda los índices de la ruta_principal donde el avión haya ido rápido
-                                ruta_media: Guarda los índices de la ruta_principal donde el avión haya ido a una velocidad media
-                                ruta_lenta: Guarda los índices de la ruta_principal donde el avión haya ido lento
-                                ultima_velocidad: Nos ayuda gestionar las rutas que guardan información sobre la velocidad del avión en los distintos tramos de la ruta principal
-                                onGround: Inidca si el avión está en tierra o en aire"""
+    def addAirplane(id_avion, latitud, longitud, on_ground, velocidad, altura=None):
+        """Añade el avión para que pueda ser pintado en el mapa"""
 
         if (id_avion not in Airplanes.aviones):  
             Airplanes.aviones[id_avion] = {
@@ -78,6 +83,8 @@ class Airplanes:
                 "onGround": None,
             }
         Airplanes.aviones[id_avion]["onGround"] = on_ground
+        if altura is not None:
+            Airplanes.aviones[id_avion]["alturas"].append(altura)
         
         Routes.addLocation(id_avion, latitud, longitud, velocidad)
 
@@ -86,9 +93,10 @@ class Airplanes:
         """Borra el avión"""
         if id_avion in Airplanes.aviones:
             del Airplanes.aviones[id_avion]
+        Routes.deleteAirplane(id_avion)
         
+    
     @staticmethod
     def reset():
         Airplanes.capa_aviones = folium.FeatureGroup(name="Aviones")
-        Airplanes.capa_rutas = folium.FeatureGroup(name="Rutas")
         Airplanes.aviones = dict()

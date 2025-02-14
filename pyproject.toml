@@ -17,4 +17,5 @@ dependencies = [
     "plotly>=6.0.0",
     "dash>=2.18.2",
     "missingno>=0.5.2",
+    "plotly-express>=0.4.1",
 ]
