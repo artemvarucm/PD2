@@ -3,6 +3,7 @@ import folium.plugins
 import pandas as pd
 import math
 import base64
+from layers.airplanes import RoutesVelocity
 
 m = folium.Map(location=[40.51, -3.53], zoom_start=12)
 
@@ -16,7 +17,8 @@ lines = [
     {
         "coordinates": df[df.icao == icao][['lon', 'lat']].values.tolist(),
         "dates": df[df.icao == icao]['ts_kafka'].values.tolist(),
-        "color": "red",
+        "color": df[df.icao == icao].velocity.map(lambda x: RoutesVelocity.get_color_by_speed(x) if x is not None else "green").values.tolist(),
+        "popup": f"Avión: {icao}"
     }
 
     for icao in df.icao.unique()
@@ -47,16 +49,17 @@ features = [
                 "iconUrl": getIcon(False, svg_air_data, svg_ground_data),
                 "iconSize": [20, 20],
             },
-            "style": {
-                "color": line["color"], # aqui podemos meter el color (velocidad)
-                "weight": 2,
-            },
+            "popup": line["popup"],
+            #"style": {
+            #    "color": line["color"], # aqui podemos meter el color (velocidad)
+            #    "weight": 2,
+            #},
         },
     }
     for line in lines
 ]
 
-folium.plugins.TimestampedGeoJson(
+t = folium.plugins.TimestampedGeoJson(
     {
         "type": "FeatureCollection",
         "features": features,
@@ -65,6 +68,7 @@ folium.plugins.TimestampedGeoJson(
     period="PT1M",
     auto_play=True,
     add_last_point=True,
-).add_to(m)
+)
+t.add_to(m)
 
 m.show_in_browser()
