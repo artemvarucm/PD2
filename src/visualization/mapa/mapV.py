@@ -143,6 +143,7 @@ class MapV:
         for avion in self.aviones.keys():
             #print(len(self.aviones[avion]["trayectoria"]))
             # if len(self.aviones[avion]["trayectoria"]) > 1:
+            altura = None
             for i in range(1, len(self.aviones[avion]["trayectoria"])):
                 lat1, lon1, vel1 = self.aviones[avion]["trayectoria"][i-1]
                 lat2, lon2, vel2 = self.aviones[avion]["trayectoria"][i]
@@ -172,7 +173,7 @@ class MapV:
                 marker = folium.Marker(
                     location=[self.aviones[avion]["lat"], self.aviones[avion]["lon"]],
                     icon=icon,
-                    popup=f"Avión {avion}",
+                    popup=f"Avión {avion} -- Altura: {altura} pies",
                     tooltip=f"Avión {avion}"
                 )
             except Exception as e:
