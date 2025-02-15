@@ -10,26 +10,22 @@ class RoutesVelocity(Routes):
     @staticmethod
     def paintRoute(id_avion):
         """Pinta la ruta del avión. Tiene en cuenta la velocidad del avión en cada tramo para utilizar un color u otro"""
-        rutas = ["ruta_lenta", "ruta_rapida", "ruta_media"]
-        colores = {"ruta_rapida": "red", "ruta_media": "orange", "ruta_lenta": "green"}
+        #rutas = ["ruta_lenta", "ruta_rapida", "ruta_media"]
+        #colores = {"ruta_rapida": "red", "ruta_media": "orange", "ruta_lenta": "green"}
 
-        for tipo_ruta in rutas:
-            for r in range(
-                0, len(RoutesVelocity.ruta_aviones[id_avion]["rutas"][tipo_ruta]), 2
-            ):
-                folium.PolyLine(
-                    RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][
-                        RoutesVelocity.ruta_aviones[id_avion]["rutas"][tipo_ruta][
-                            r
-                        ] : RoutesVelocity.ruta_aviones[id_avion]["rutas"][tipo_ruta][
-                            r + 1
-                        ]
-                        + 1
-                    ],
-                    color=colores[tipo_ruta],
-                    weight=2.5,
-                    opacity=1,
-                ).add_to(RoutesVelocity.capa_rutas)
+        for i in range(1, len(RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"])):
+            lat1, lon1, vel1 = RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][i-1]
+            lat2, lon2, vel2 = RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][i]
+            color = RoutesVelocity.get_color_by_speed(vel1)
+            folium.PolyLine(
+                [(lat1, lon1), (lat2, lon2)],
+                color=color,
+                weight=2,
+                opacity=0.8,
+                tooltip=f"Trayectoria Avión {id_avion}",
+                #class_name=f"trayectoria trayectoria-{id_avion}",
+                #popup=f"Velocidad: {vel1} nudos -- Altura {altura}",
+            ).add_to(RoutesVelocity.capa_rutas)
 
     @staticmethod
     def sameRoute(id_avion, timestamp):
@@ -63,9 +59,9 @@ class RoutesVelocity(Routes):
             RoutesVelocity.ruta_aviones[id_avion] = {
                 "rutas": {
                     "ruta_principal": [],
-                    "ruta_rapida": [],
-                    "ruta_media": [],
-                    "ruta_lenta": [],
+                    #"ruta_rapida": [],
+                    #"ruta_media": [],
+                    #"ruta_lenta": [],
                     "ultima_velocidad": None,
                 },
                 "last_timestamp": None,
@@ -74,64 +70,22 @@ class RoutesVelocity(Routes):
             }
 
         RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"].append(
-            (round(latitud, 3), round(longitud, 3))
+            (round(latitud, 3), round(longitud, 3), velocidad)
         )  # Se añade la ubicación a su ruta
         RoutesVelocity.ruta_aviones[id_avion]["last_timestamp"] = timestamp
         RoutesVelocity.ruta_aviones[id_avion]["onGround"] = onGround
         if not RoutesVelocity.ruta_aviones[id_avion]["been_on_air"]:
             RoutesVelocity.ruta_aviones[id_avion]["been_on_air"] = not onGround
 
-        nuevoTipoVelocidad = RoutesVelocity.getVelocityType(velocidad)
-
-        if RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ultima_velocidad"] is None:
-            RoutesVelocity.ruta_aviones[id_avion]["rutas"][
-                "ultima_velocidad"
-            ] = nuevoTipoVelocidad
-            RoutesVelocity.ruta_aviones[id_avion]["rutas"][nuevoTipoVelocidad].append(
-                len(RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"])
-                - 1
-            )
-            RoutesVelocity.ruta_aviones[id_avion]["rutas"][nuevoTipoVelocidad].append(
-                len(RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"])
-            )
-        else:
-            RoutesVelocity.updateTramosVelocidad(id_avion, nuevoTipoVelocidad)
 
     @staticmethod
-    def updateTramosVelocidad(id_avion, nuevoTipoVelocidad):
-        """Gestiona el tipo de velocidad de los tramos de la ruta"""
-        if (
-            nuevoTipoVelocidad
-            == RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ultima_velocidad"]
-        ):
-            RoutesVelocity.ruta_aviones[id_avion]["rutas"][nuevoTipoVelocidad][-1] = (
-                len(RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"])
-            )
+    def get_color_by_speed(velocity):
+        if velocity < 300:
+            return "red"
+        elif velocity < 450:
+            return "yellow"
         else:
-            RoutesVelocity.ruta_aviones[id_avion]["rutas"][nuevoTipoVelocidad].append(
-                RoutesVelocity.ruta_aviones[id_avion]["rutas"][
-                    RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ultima_velocidad"]
-                ][-1]
-            )
-            RoutesVelocity.ruta_aviones[id_avion]["rutas"][nuevoTipoVelocidad].append(
-                RoutesVelocity.ruta_aviones[id_avion]["rutas"][
-                    RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ultima_velocidad"]
-                ][-1]
-                + 1
-            )
-            RoutesVelocity.ruta_aviones[id_avion]["rutas"][
-                "ultima_velocidad"
-            ] = nuevoTipoVelocidad
-
-    @staticmethod
-    def getVelocityType(velocidad):
-        """Devuelve el tipo de velocidad según la velocidad del avión"""
-        if velocidad <= 60:
-            return "ruta_lenta"
-        elif velocidad <= 80:
-            return "ruta_media"
-        else:
-            return "ruta_rapida"
+            return "green"
 
     @staticmethod
     def deleteAirplane(id_avion):

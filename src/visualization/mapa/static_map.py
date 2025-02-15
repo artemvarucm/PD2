@@ -49,19 +49,9 @@ class StaticMap:
         Airplanes.paintAirplanes(self.mapa)
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
-    def addAirplane(
-        self, id_avion, latitud, longitud, on_ground, velocidad, timmestamp, altura
-    ):
+    def addAirplane(self, id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura):
         """Añade el avión para que pueda ser pintado en el mapa. Además, también servirá para pintar su ruta"""
-        Airplanes.addAirplane(
-            id_avion=id_avion,
-            latitud=latitud,
-            longitud=longitud,
-            on_ground=on_ground,
-            velocidad=velocidad,
-            timestamp=timmestamp,
-            altura=altura,
-        )
+        Airplanes.addAirplane(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura)
 
     def deleteAirplane(self, id_avion):
         """Borra el avión"""
@@ -82,6 +72,10 @@ class StaticMap:
 
         self.addExtraFeatures()
         self.paintAirplanes()
+
+        script = Airplanes.script_show_one_route_on_click()
+
+        self.mapa.get_root().html.add_child(folium.Element(script))
 
         if nombre_mapa is None:
             nombre_mapa = time.strftime("%d-%m-%Y_%H-%M-%S")
@@ -104,30 +98,6 @@ class StaticMap:
 
 m = MapVisualization()
 """
-df = pd.read_csv("data/ex1/icao_343694.csv")
-df["velocidad"] = 10
-df.loc[3000:15000, "velocidad"] = 70
-df.loc[15000:23000, "velocidad"] = 100
-df["on_ground"] = True
-i = 0
-# df = df.loc[:50]
-for _, row in df.iterrows():
-    row["longitud"] = -3.53 + i
-   # print(f"ON GROOUND {row["on_ground"]}-- LAT -- {row["latitude"]} LON -- {row["longitud"]}")
-    if (
-        pd.notna(row["on_ground"])
-        and pd.notna(row["latitude"])
-        and pd.notna(row["longitud"])
-    ):  # on ground
-        m.addAirplane(
-            row["icao"],
-            row["latitude"] + i,
-            row["longitud"],
-            row["on_ground"],
-            row["velocidad"],
-        )
-        i = i + 0.01
-"""
 timestamp_str1 = "2025-02-15 14:06:22"
 timestamp_str2 = "2025-02-15 14:06:25"
 timestamp_str3 = "2025-02-15 14:06:28"
@@ -140,4 +110,13 @@ m.addAirplane("jnsfu", 40.56, -3.56, True, 70, timestamp_str3, 3)
 m.addAirplane("jnsfu", 40.52, -3.53, True, 90, timestamp_str4, 4)
 m.addAirplane("jnsfu", 40.70, -3.80, False, 90, timestamp_str5, 3)
 m.addAirplane("jnsfu", 40.71, -3.82, False, 10, timestamp_str6, 2)
+"""
+df = pd.read_csv("data/ex2/preprocess_mapa_mini.csv")
+
+df['ts_kafka'] = "2025-02-15 14:06:22"
+for _, row in df.iterrows():
+    if pd.notna(row["ground"]) and pd.notna(row["lat"]) and pd.notna(row["lon"]) and  row["ground"] is not None and row["lat"] is not None and row["lon"] is not None: #on ground
+        print(f"ICAO -- {row["icao"]} , LAT -- {row["lat"]}, LON -- {row["lon"]}, VELOCITY -- {row["velocity"]}, DIRECCION -- {row["direccion"]}")
+        m.addAirplane(row["icao"], row["lat"],row["lon"],row["ground"], row["direccion"], row["velocity"], row["ts_kafka"], row["alt_feet"])
+
 m.showMap()

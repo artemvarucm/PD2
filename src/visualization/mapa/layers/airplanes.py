@@ -1,7 +1,8 @@
 import folium, branca, plotly.express as px, numpy as np
 from .routes_velocity import RoutesVelocity
 from .routes_history import RoutesHistory
-
+import math
+import json
 
 class Airplanes:
     capa_aviones = folium.FeatureGroup(name="Aviones")
@@ -17,21 +18,22 @@ class Airplanes:
                         <b>ID: {id_avion}</b><br>
                         Lat: {round(latitud,2)}<br>
                         Lon: {round(longitud,2)}<br>
-                        Velocidad: {velocidad} km/h
+                        Velocidad: {velocidad} nudos
                     """
 
     @staticmethod
-    def airplaneIcon(onGroung):
+    def airplaneIcon(onGround, rotation):
         """Devuelve el icono correspondiente según el avión esté en el aire o en tierra"""
-        if onGroung:
-            path_icon = "./assets/icons/airplane_ground.png"
+        if onGround:
+            path_icon = "./assets/icons/airplane_ground.svg"
         else:
-            path_icon = "./assets/icons/airplane_air.png"
+            path_icon = "./assets/icons/airplane_air.svg"
+       
+        with open(path_icon, "r") as file:
+            svg_data = file.read()
 
-        icon = folium.CustomIcon(
-            path_icon,
-            icon_size=(25, 25),
-        )
+        icon = folium.DivIcon(html=f"<div style='width:16px;height:16px; transform: rotate({rotation * 180 / math.pi}deg);'>{svg_data}</div>")
+
 
         return icon
 
@@ -58,18 +60,18 @@ class Airplanes:
         return popup
 
     @staticmethod
-    def paintAirplane(id_avion, latitud, longitud, on_ground):
+    def paintAirplane(id_avion, latitud, longitud, on_ground, rotation, velocidad):
         """Pinta el avión en el mapa"""
 
         folium.Marker(
             location=[latitud, longitud],
             tooltip=folium.Tooltip(
-                Airplanes.createDescriptionAirplane(id_avion, latitud, longitud),
+                Airplanes.createDescriptionAirplane(id_avion, latitud, longitud, velocidad),
                 max_width=300,
             ),
             icao=id_avion,
             popup=Airplanes.generateImageHeights(id_avion),
-            icon=Airplanes.airplaneIcon(on_ground),
+            icon=Airplanes.airplaneIcon(on_ground, rotation),
         ).add_to(Airplanes.capa_aviones)
 
     @staticmethod
@@ -81,6 +83,8 @@ class Airplanes:
                 RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][-1][0],
                 RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][-1][1],
                 Airplanes.aviones[id_avion]["onGround"],
+                Airplanes.aviones[id_avion]["rotacion"],
+                Airplanes.aviones[id_avion]["velocidad"]
             )
             RoutesVelocity.paintRoute(id_avion)
             RoutesHistory.paintRoute(id_avion)
@@ -91,16 +95,19 @@ class Airplanes:
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
     @staticmethod
-    def addAirplane(
-        id_avion, latitud, longitud, on_ground, velocidad, timestamp, altura=None
-    ):
+    def addAirplane(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura):
         """Añade el avión para que pueda ser pintado en el mapa"""
         if id_avion not in Airplanes.aviones:
             Airplanes.aviones[id_avion] = {
                 "alturas": [],
                 "onGround": None,
+                "rotacion": None,
+                "velocidad": None,
             }
         Airplanes.aviones[id_avion]["onGround"] = on_ground
+        Airplanes.aviones[id_avion]["rotacion"] = rotacion
+        Airplanes.aviones[id_avion]["velocidad"] = velocidad
+
         if altura is not None:
             Airplanes.aviones[id_avion]["alturas"].append(altura)
 
@@ -134,3 +141,14 @@ class Airplanes:
         Airplanes.capa_aviones = folium.FeatureGroup(name="Aviones")
         RoutesVelocity.reset()
         RoutesHistory.reset()
+
+    @staticmethod
+    def script_show_one_route_on_click():
+        """Script JavaScript (funcionalidad de selección y ocultación de elementos)"""
+        scriptContent = None
+        
+        with open("./assets/js/plane_click.js", "r") as file:
+            scriptContent = file.read()
+
+        scriptContent = scriptContent.replace('{{trayectoriasLengths}}', json.dumps([len(avion["rutas"]["ruta_principal"]) - 1 for avion in RoutesVelocity.ruta_aviones.values()]))
+        return f"<script>{scriptContent}</script>"

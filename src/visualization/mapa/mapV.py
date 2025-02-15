@@ -156,7 +156,7 @@ class MapV:
                     weight=2,
                     opacity=0.8,
                     tooltip=f"Trayectoria Avión {avion}",
-                    popup=f"Velocidad: {vel1} km/h -- Altura {altura}",
+                    popup=f"Velocidad: {vel1} nudos -- Altura {altura}",
                     class_name=f"trayectoria trayectoria-{avion}"
                 )
                 self.layers['rutas'].add_child(polyline)  # Añadir la trayectoria a su capa
