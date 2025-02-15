@@ -132,15 +132,16 @@ class MapV:
         # capa_aviones = folium.FeatureGroup(name="Aviones")
         # capa_trayectorias = folium.FeatureGroup(name="Trayectorias")
 
-        icon_path = "assets/icons/airplane_air.svg"
+        with open("assets/icons/airplane_air.svg", "r") as file:
+            svg_data_air = file.read()
 
-        with open(icon_path, "r") as file:
-            svg_data = file.read()
-            avion_markers = []
+        with open("assets/icons/airplane_ground.svg", "r") as file:
+            svg_data_ground = file.read()
+
 
         # Agregar trayectorias y marcadores
         for avion in self.aviones.keys():
-            print(len(self.aviones[avion]["trayectoria"]))
+            #print(len(self.aviones[avion]["trayectoria"]))
             # if len(self.aviones[avion]["trayectoria"]) > 1:
             for i in range(1, len(self.aviones[avion]["trayectoria"])):
                 lat1, lon1, vel1 = self.aviones[avion]["trayectoria"][i-1]
@@ -159,6 +160,11 @@ class MapV:
                 )
                 self.layers['rutas'].add_child(polyline)  # Añadir la trayectoria a su capa
 
+            if self.aviones[avion]["ground"]:
+                svg_data = svg_data_ground
+            else:
+                svg_data = svg_data_air
+
             icon = folium.DivIcon(html=f"<div style='width:16px;height:16px; transform: rotate({self.aviones[avion]['rotacion'] * 180 / math.pi}deg);'>{svg_data}</div>")
 
             try:
@@ -171,7 +177,6 @@ class MapV:
                 )
             except Exception as e:
                 print(self.aviones[avion]["lat"], self.aviones[avion]["lon"])
-            avion_markers.append(marker)
             self.layers['aviones'].add_child(marker)  # Añadir el marcador a su capa
 
     # Agregar las capas al mapa
@@ -321,7 +326,7 @@ class MapV:
 
 m = MapV()
 
-df = pd.read_csv("preprocess_mapa (2).csv")
+df = pd.read_csv("preprocess_mapa (2).csv")  #NO ES EL CONJUNTOD DE DATOS GRANDE
 df["alt_feet"] = 0
 # df = df.loc[:150]
 for _, row in df.iterrows():
