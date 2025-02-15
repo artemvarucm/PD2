@@ -1,12 +1,13 @@
 import folium
 
+
 class LandingStrips:
     pistas = [
-            {"nombre": "1", "lat": 40.463, "lon": -3.554},
-            {"nombre": "2", "lat": 40.473, "lon": -3.536},
-            {"nombre": "3", "lat": 40.507, "lon": -3.574},
-            {"nombre": "4", "lat": 40.507, "lon": -3.559},
-        ]
+        {"nombre": "1", "lat": 40.463, "lon": -3.554},
+        {"nombre": "2", "lat": 40.473, "lon": -3.536},
+        {"nombre": "3", "lat": 40.507, "lon": -3.574},
+        {"nombre": "4", "lat": 40.507, "lon": -3.559},
+    ]
     capa = folium.FeatureGroup(name="Pistas de Aterrizaje")
     color = "green"
 
@@ -19,14 +20,16 @@ class LandingStrips:
                         Lat: {latitud}<br>
                         Lon: {longitud}
                     """
-    
+
     @staticmethod
     def paintLandingStrip(nombre_pista, latitud, longitud):
         """Pinta la pista de aterrizaje en el mapa"""
         folium.Marker(
             location=[latitud, longitud],
             tooltip=folium.Tooltip(
-                LandingStrips.createDescriptionLandingStrip(nombre_pista, latitud, longitud),
+                LandingStrips.createDescriptionLandingStrip(
+                    nombre_pista, latitud, longitud
+                ),
                 max_width=300,
             ),
             icon=folium.Icon(

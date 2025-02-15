@@ -1,5 +1,6 @@
 import folium
 
+
 class Radars:
     radares = [{"nombre": "PRINCIPAL", "lat": 40.51, "lon": -3.53}]
     capa = folium.FeatureGroup(name="Radares")
@@ -14,7 +15,7 @@ class Radars:
                         Lat: {latitud}<br>
                         Lon: {longitud}
                     """
-    
+
     @staticmethod
     def paintRadar(nombre_radar, latitud, longitud):
         """Pinta el radar en el mapa"""

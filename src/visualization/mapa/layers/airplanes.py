@@ -19,7 +19,7 @@ class Airplanes:
                         Lon: {round(longitud,2)}<br>
                         Velocidad: {velocidad} km/h
                     """
-    
+
     @staticmethod
     def airplaneIcon(onGroung):
         """Devuelve el icono correspondiente según el avión esté en el aire o en tierra"""
@@ -39,26 +39,19 @@ class Airplanes:
     def generateImageHeights(id_avion):
         x = np.arange(len(Airplanes.aviones[id_avion]["alturas"]))
         y = Airplanes.aviones[id_avion]["alturas"]
-        fig = px.line(x=x, y=y,  width=600, height=400, markers=True)
+        fig = px.line(x=x, y=y, width=600, height=400, markers=True)
         fig.update_layout(
-                    #margin=dict(l=100, r=100, t=100, b=100),
-                    title_text='Alturas del avión con el paso del tiempo',
-                    title_x=0.5,
-                    yaxis_title="Altura",
-                    yaxis = dict(
-                        showgrid= False
-                    ),     
-                    xaxis_title="Nº Mensaje",      
-                    xaxis = dict(
-                        tickmode='array',
-                        tickvals = x, 
-                        ticktext = x, 
-                        showgrid= False
-                    ),
-                   font=dict(size=12, color="black")
-                )
-        
-        html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+            # margin=dict(l=100, r=100, t=100, b=100),
+            title_text="Alturas del avión con el paso del tiempo",
+            title_x=0.5,
+            yaxis_title="Altura",
+            yaxis=dict(showgrid=False),
+            xaxis_title="Nº Mensaje",
+            xaxis=dict(tickmode="array", tickvals=x, ticktext=x, showgrid=False),
+            font=dict(size=12, color="black"),
+        )
+
+        html = fig.to_html(full_html=False, include_plotlyjs="cdn")
 
         iframe = branca.element.IFrame(html=html, width=620, height=420)
         popup = folium.Popup(iframe)
@@ -95,13 +88,14 @@ class Airplanes:
         Airplanes.capa_aviones.add_to(mapa)
         RoutesHistory.capa_rutas.add_to(mapa)
         RoutesVelocity.capa_rutas.add_to(mapa)
-        
-   
+
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
     @staticmethod
-    def addAirplane(id_avion, latitud, longitud, on_ground, velocidad, timestamp, altura=None):
+    def addAirplane(
+        id_avion, latitud, longitud, on_ground, velocidad, timestamp, altura=None
+    ):
         """Añade el avión para que pueda ser pintado en el mapa"""
-        if (id_avion not in Airplanes.aviones):  
+        if id_avion not in Airplanes.aviones:
             Airplanes.aviones[id_avion] = {
                 "alturas": [],
                 "onGround": None,
@@ -109,9 +103,22 @@ class Airplanes:
         Airplanes.aviones[id_avion]["onGround"] = on_ground
         if altura is not None:
             Airplanes.aviones[id_avion]["alturas"].append(altura)
-        
-        RoutesVelocity.addLocation(id_avion=id_avion, latitud=latitud, longitud=longitud, timestamp=timestamp, onGround=on_ground, velocidad=velocidad)
-        RoutesHistory.addLocation(id_avion=id_avion, latitud=latitud, longitud=longitud, timestamp=timestamp, onGround=on_ground)
+
+        RoutesVelocity.addLocation(
+            id_avion=id_avion,
+            latitud=latitud,
+            longitud=longitud,
+            timestamp=timestamp,
+            onGround=on_ground,
+            velocidad=velocidad,
+        )
+        RoutesHistory.addLocation(
+            id_avion=id_avion,
+            latitud=latitud,
+            longitud=longitud,
+            timestamp=timestamp,
+            onGround=on_ground,
+        )
 
     @staticmethod
     def deleteAirplane(id_avion):
@@ -120,11 +127,10 @@ class Airplanes:
             del Airplanes.aviones[id_avion]
         RoutesVelocity.deleteAirplane(id_avion)
         RoutesHistory.deleteAirplane(id_avion)
-    
+
     @staticmethod
     def reset():
         Airplanes.aviones = dict()
         Airplanes.capa_aviones = folium.FeatureGroup(name="Aviones")
         RoutesVelocity.reset()
         RoutesHistory.reset()
-        

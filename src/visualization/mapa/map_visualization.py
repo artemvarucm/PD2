@@ -5,17 +5,20 @@ from layers.landing_strips import LandingStrips
 from layers.airplanes import Airplanes
 from datetime import datetime
 
+
 class MapVisualization:
     def __init__(self):
         self.mapa = self.createMap()
         self.layerControl = folium.LayerControl(collapsed=False, sortLayers=True)
-        
+
         self.initializeMap(all=True)
 
     # INICIALIZACION MAPA
     def createMap(self, latitud=40.51, longitud=-3.53):
         """Crea un mapa. Al abrirse hace zoom en la localizacion indicada"""
-        mapa = folium.Map(location=[latitud, longitud], zoom_start=12, zoom_control=False)
+        mapa = folium.Map(
+            location=[latitud, longitud], zoom_start=12, zoom_control=False
+        )
         return mapa
 
     def initializeMap(self, all=False):
@@ -47,19 +50,28 @@ class MapVisualization:
         Airplanes.paintAirplanes(self.mapa)
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
-    def addAirplane(self, id_avion, latitud, longitud, on_ground, velocidad, timmestamp, altura):
+    def addAirplane(
+        self, id_avion, latitud, longitud, on_ground, velocidad, timmestamp, altura
+    ):
         """Añade el avión para que pueda ser pintado en el mapa. Además, también servirá para pintar su ruta"""
-        Airplanes.addAirplane(id_avion=id_avion, latitud=latitud, longitud=longitud, on_ground=on_ground, velocidad=velocidad, timestamp=timmestamp, altura=altura)
+        Airplanes.addAirplane(
+            id_avion=id_avion,
+            latitud=latitud,
+            longitud=longitud,
+            on_ground=on_ground,
+            velocidad=velocidad,
+            timestamp=timmestamp,
+            altura=altura,
+        )
 
     def deleteAirplane(self, id_avion):
         """Borra el avión"""
         Airplanes.deleteAirplane(id_avion)
 
-     # FUNCIONALIDADES EXTRAS EN EL MAPA
+    # FUNCIONALIDADES EXTRAS EN EL MAPA
     def addExtraFeatures(self):
         """Añade funcionalidades extras al mapa"""
         ExtraFeatures().addExtraFeatures(self.mapa, Airplanes.capa_aviones)
-    
 
     # GESTIÓN DEL MAPA RESULTANTE
     def saveMap(self, nombre_mapa):
@@ -71,7 +83,7 @@ class MapVisualization:
 
         self.addExtraFeatures()
         self.paintAirplanes()
-        
+
         if nombre_mapa is None:
             nombre_mapa = time.strftime("%d-%m-%Y_%H-%M-%S")
 
@@ -89,6 +101,7 @@ class MapVisualization:
         """Borra las capas que varían con el tiempo (aviones y rutas)"""
         self.mapa = self.createMap()
         self.initializeMap(all=False)
+
 
 m = MapVisualization()
 """
@@ -124,9 +137,8 @@ timestamp_str5 = "2025-02-15 20:06:24"
 timestamp_str6 = "2025-02-15 20:06:29"
 m.addAirplane("jnsfu", 40.52, -3.53, True, 10, timestamp_str1, 1)
 m.addAirplane("jnsfu", 40.55, -3.55, False, 70, timestamp_str2, 2)
-m.addAirplane("jnsfu", 40.56, -3.56, True, 70,timestamp_str3, 3)
+m.addAirplane("jnsfu", 40.56, -3.56, True, 70, timestamp_str3, 3)
 m.addAirplane("jnsfu", 40.52, -3.53, True, 90, timestamp_str4, 4)
 m.addAirplane("jnsfu", 40.70, -3.80, False, 90, timestamp_str5, 3)
 m.addAirplane("jnsfu", 40.71, -3.82, False, 10, timestamp_str6, 2)
 m.showMap()
-
