@@ -3,10 +3,9 @@ from plugins.extra_features import ExtraFeatures
 from layers.radars import Radars
 from layers.landing_strips import LandingStrips
 from layers.airplanes import Airplanes
-from datetime import datetime
 
 
-class MapVisualization:
+class StaticMap:
     def __init__(self):
         self.mapa = self.createMap()
         self.layerControl = folium.LayerControl(collapsed=False, sortLayers=True)
