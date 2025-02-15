@@ -111,6 +111,7 @@ m.addAirplane("jnsfu", 40.52, -3.53, True, 90, timestamp_str4, 4)
 m.addAirplane("jnsfu", 40.70, -3.80, False, 90, timestamp_str5, 3)
 m.addAirplane("jnsfu", 40.71, -3.82, False, 10, timestamp_str6, 2)
 """
+
 df = pd.read_csv("data/ex2/preprocess_mapa_mini.csv")
 
 df['ts_kafka'] = "2025-02-15 14:06:22"
@@ -118,5 +119,6 @@ for _, row in df.iterrows():
     if pd.notna(row["ground"]) and pd.notna(row["lat"]) and pd.notna(row["lon"]) and  row["ground"] is not None and row["lat"] is not None and row["lon"] is not None: #on ground
         print(f"ICAO -- {row["icao"]} , LAT -- {row["lat"]}, LON -- {row["lon"]}, VELOCITY -- {row["velocity"]}, DIRECCION -- {row["direccion"]}")
         m.addAirplane(row["icao"], row["lat"],row["lon"],row["ground"], row["direccion"], row["velocity"], row["ts_kafka"], row["alt_feet"])
+
 
 m.showMap()

@@ -151,4 +151,5 @@ class Airplanes:
             scriptContent = file.read()
 
         scriptContent = scriptContent.replace('{{trayectoriasLengths}}', json.dumps([len(avion["rutas"]["ruta_principal"]) - 1 for avion in RoutesVelocity.ruta_aviones.values()]))
+
         return f"<script>{scriptContent}</script>"
