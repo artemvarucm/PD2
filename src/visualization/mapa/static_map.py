@@ -96,7 +96,7 @@ class StaticMap:
         self.initializeMap(all=False)
 
 
-m = MapVisualization()
+m = StaticMap()
 """
 timestamp_str1 = "2025-02-15 14:06:22"
 timestamp_str2 = "2025-02-15 14:06:25"
