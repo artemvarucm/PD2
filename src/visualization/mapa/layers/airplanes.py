@@ -1,5 +1,6 @@
 import folium, branca, plotly.express as px, numpy as np
-from .routes import Routes
+from .routes_velocity import RoutesVelocity
+from .routes_history import RoutesHistory
 
 
 class Airplanes:
@@ -84,20 +85,22 @@ class Airplanes:
         for id_avion in Airplanes.aviones:
             Airplanes.paintAirplane(
                 id_avion,
-                Routes.ruta_aviones[id_avion]["rutas"]["ruta_principal"][-1][0],
-                Routes.ruta_aviones[id_avion]["rutas"]["ruta_principal"][-1][1],
+                RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][-1][0],
+                RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][-1][1],
                 Airplanes.aviones[id_avion]["onGround"],
             )
-            Routes.paintRoute(id_avion)
+            RoutesVelocity.paintRoute(id_avion)
+            RoutesHistory.paintRoute(id_avion)
 
         Airplanes.capa_aviones.add_to(mapa)
-        Routes.capa_rutas.add_to(mapa)
+        RoutesHistory.capa_rutas.add_to(mapa)
+        RoutesVelocity.capa_rutas.add_to(mapa)
+        
    
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
     @staticmethod
-    def addAirplane(id_avion, latitud, longitud, on_ground, velocidad, altura=None):
+    def addAirplane(id_avion, latitud, longitud, on_ground, velocidad, timestamp, altura=None):
         """Añade el avión para que pueda ser pintado en el mapa"""
-
         if (id_avion not in Airplanes.aviones):  
             Airplanes.aviones[id_avion] = {
                 "alturas": [],
@@ -107,19 +110,21 @@ class Airplanes:
         if altura is not None:
             Airplanes.aviones[id_avion]["alturas"].append(altura)
         
-        Routes.addLocation(id_avion, latitud, longitud, velocidad)
+        RoutesVelocity.addLocation(id_avion=id_avion, latitud=latitud, longitud=longitud, timestamp=timestamp, onGround=on_ground, velocidad=velocidad)
+        RoutesHistory.addLocation(id_avion=id_avion, latitud=latitud, longitud=longitud, timestamp=timestamp, onGround=on_ground)
 
     @staticmethod
     def deleteAirplane(id_avion):
         """Borra el avión"""
         if id_avion in Airplanes.aviones:
             del Airplanes.aviones[id_avion]
-        Routes.deleteAirplane(id_avion)
-        
+        RoutesVelocity.deleteAirplane(id_avion)
+        RoutesHistory.deleteAirplane(id_avion)
     
     @staticmethod
     def reset():
         Airplanes.aviones = dict()
         Airplanes.capa_aviones = folium.FeatureGroup(name="Aviones")
-        Routes.reset()
+        RoutesVelocity.reset()
+        RoutesHistory.reset()
         

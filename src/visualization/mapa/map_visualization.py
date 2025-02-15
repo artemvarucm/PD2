@@ -3,7 +3,7 @@ from plugins.extra_features import ExtraFeatures
 from layers.radars import Radars
 from layers.landing_strips import LandingStrips
 from layers.airplanes import Airplanes
-from plugins.search_bar import SearchBar
+from datetime import datetime
 
 class MapVisualization:
     def __init__(self):
@@ -47,9 +47,9 @@ class MapVisualization:
         Airplanes.paintAirplanes(self.mapa)
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
-    def addAirplane(self, id_avion, latitud, longitud, on_ground, velocidad, altura):
+    def addAirplane(self, id_avion, latitud, longitud, on_ground, velocidad, timmestamp, altura):
         """Añade el avión para que pueda ser pintado en el mapa. Además, también servirá para pintar su ruta"""
-        Airplanes.addAirplane(id_avion, latitud, longitud, on_ground, velocidad, altura)
+        Airplanes.addAirplane(id_avion=id_avion, latitud=latitud, longitud=longitud, on_ground=on_ground, velocidad=velocidad, timestamp=timmestamp, altura=altura)
 
     def deleteAirplane(self, id_avion):
         """Borra el avión"""
@@ -58,20 +58,8 @@ class MapVisualization:
      # FUNCIONALIDADES EXTRAS EN EL MAPA
     def addExtraFeatures(self):
         """Añade funcionalidades extras al mapa"""
-        ExtraFeatures().addExtraFeatures(self.mapa)
-        MapVisualization.addSearchBar(self.mapa, Airplanes.capa_aviones)
-
-    @staticmethod
-    def addSearchBar(mapa, capa):
-        """Añade la búsqueda del avión por icao"""
-        SearchBar(
-            layer=capa,
-            #geom_type="Point",
-            placeholder="Busca por ICAO",
-            collapsed=False,
-            search_label="icao",
-            weight=3,
-        ).add_to(mapa)
+        ExtraFeatures().addExtraFeatures(self.mapa, Airplanes.capa_aviones)
+    
 
     # GESTIÓN DEL MAPA RESULTANTE
     def saveMap(self, nombre_mapa):
@@ -128,12 +116,17 @@ for _, row in df.iterrows():
         )
         i = i + 0.01
 """
-m.addAirplane("jnsfu", 40.52, -3.53, True, 10,1)
-m.addAirplane("jnsfu", 40.55, -3.55, False, 70,2)
-m.addAirplane("jnsfu", 40.56, -3.56, False, 70,3)
-m.addAirplane("la", 40.52, -3.53, False, 90,4)
-m.addAirplane("la", 40.70, -3.80, True, 90,3)
-m.addAirplane("la", 40.71, -3.82, False, 10,2)
-m.addAirplane("la", 40.71, -3.82, False, 10,2)
+timestamp_str1 = "2025-02-15 14:06:22"
+timestamp_str2 = "2025-02-15 14:06:25"
+timestamp_str3 = "2025-02-15 14:06:28"
+timestamp_str4 = "2025-02-15 20:06:22"
+timestamp_str5 = "2025-02-15 20:06:24"
+timestamp_str6 = "2025-02-15 20:06:29"
+m.addAirplane("jnsfu", 40.52, -3.53, True, 10, timestamp_str1, 1)
+m.addAirplane("jnsfu", 40.55, -3.55, False, 70, timestamp_str2, 2)
+m.addAirplane("jnsfu", 40.56, -3.56, True, 70,timestamp_str3, 3)
+m.addAirplane("jnsfu", 40.52, -3.53, True, 90, timestamp_str4, 4)
+m.addAirplane("jnsfu", 40.70, -3.80, False, 90, timestamp_str5, 3)
+m.addAirplane("jnsfu", 40.71, -3.82, False, 10, timestamp_str6, 2)
 m.showMap()
 

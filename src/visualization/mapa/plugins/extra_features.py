@@ -3,6 +3,8 @@ from plugins.day_and_night import DayAndNight
 from plugins.full_screen import Fullscreen
 from plugins.locate_user import LocateUser
 from plugins.mouse_position import MousePosition
+from plugins.search_bar import SearchBar
+
 
 
 class ExtraFeatures:
@@ -34,14 +36,27 @@ class ExtraFeatures:
         """Añade la posición del ratón en el mapa"""
         MousePosition(position="bottomleft", separator=",", num_digits=3).add_to(mapa)
     
+    @staticmethod
+    def addSearchBar(mapa, capa):
+        """Añade la búsqueda del avión por icao"""
+        SearchBar(
+            layer=capa,
+            #geom_type="Point",
+            placeholder="Busca por ICAO",
+            collapsed=True,
+            search_label="icao",
+            hideMarkerOnCollapse=True,
+            weight=3,
+        ).add_to(mapa)
 
     @staticmethod
-    def addExtraFeatures(mapa):
+    def addExtraFeatures(mapa, capa):
         """Añade todas las funcionalidades extras al mapa"""
         ExtraFeatures.addGeocoder(mapa)
         ExtraFeatures.addDayAndNight(mapa)
         ExtraFeatures.addFullScreen(mapa)
         ExtraFeatures.addLocateUser(mapa)
         ExtraFeatures.addMousePosition(mapa)
+        ExtraFeatures.addSearchBar(mapa, capa)
 
     
