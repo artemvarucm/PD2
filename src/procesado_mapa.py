@@ -85,9 +85,13 @@ def clean_row(full_row: dict, eventos: list):
     Prepara la fila para insertar en el dataframe limpio
     """
     if full_row['ground']:
-        full_row['velocity'] = full_row['surf_vel']
-        full_row['lat'] = full_row['surf_lat']
-        full_row['lon'] = full_row['surf_lon']
+        # CUANDO ESTA EN TIERRA PUEDE NO EMITIR EL MENSAJE SURFACE POSITION,
+        # QUE ES EXACTAMENTE LO QUE PASA Y NOS SALEN MUY POCAS FILAS CON GROUND = 1
+        if full_row['surf_vel'] is not None:
+            full_row['velocity'] = full_row['surf_vel']
+        if full_row['surf_lat'] is not None and full_row['surf_lon'] is not None:
+            full_row['lat'] = full_row['surf_lat']
+            full_row['lon'] = full_row['surf_lon']
 
     del full_row['surf_vel']
     del full_row['surf_lat']
@@ -190,7 +194,10 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                 ultimo_info["surf_lat"], ultimo_info["surf_lon"] = getSurfacePosition(row["messageHex"])
             elif (velClass.match(typecode)):
                 ultimo_info["velocity"], _, _, _ = pms.adsb.velocity(row["messageHex"])
-            elif (row["DL"] == 11):
+            elif (row["DL"] == 11 and ultimo_info['ground'] != 1):
+                # HEMOS VISTO QUE NO HAY CASI NINGUN MENSAJE DE QUE ESTÁ EN TIERRA EL AVIÓN
+                # VAMOS A PRIORIZAR A LOS AVIONES EN TIERRA POR TANTO
+                # SI APARECE UN MENSAJE CON GROUND = 1, NO LO SOBREESCRIBIMOS SI APARECE UN GROUND = 0 MAS TARDE
                 ultimo_info['ground'] = getOnGround(row["messageHex"])
 
             prev_time = row['ts_kafka']
