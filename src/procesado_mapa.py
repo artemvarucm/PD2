@@ -7,21 +7,25 @@ import math
 import logging
 
 def getAirbornePosition(hex):
+    """Devuelve latitud y longitud (usar cuando está en AIRE)"""
     RAD_LAT = 40.51
     RAD_LON = -3.53
     lat, lon = pms.adsb.airborne_position_with_ref(hex, RAD_LAT, RAD_LON)
     return lat, lon
 
 def getAirborneAltitude(hex):
+    """Devuelve la altura en pies"""
     return pms.adsb.altitude(hex)
 
 def getSurfacePosition(hex):
+        """Devuelve latitud y longitud (usar cuando está en TIERRA)"""
         RAD_LAT = 40.51
         RAD_LON = -3.53
         lat, lon = pms.adsb.position_with_ref(hex, RAD_LAT, RAD_LON)
         return lat, lon
 
 def getSurfaceVelocity(hex):
+        """Devuelve la velocidad en nudos, cuando está en TIERRA"""
         binary_message = pms.hex2bin(hex)
         speedValue = int(binary_message[37:44], 2)
         if speedValue == 0:
@@ -54,10 +58,8 @@ def length(v):
 def angle(v1, v2):
   return math.acos(dotproduct(v1, v2) / (10e-6 + (length(v1) * length(v2))))
 
-"""
-Angulo con el vector que representa el ESTE (en radianes)
-"""
 def calcularDireccion(lat1, lon1, lat2, lon2):
+    """Angulo con el vector que representa el ESTE (en radianes)"""
     if lat1 is None or lat2 is None or lon1 is None or lon2 is None:
         return None
 
@@ -81,9 +83,7 @@ df["ICAO"] = df["messageHex"].apply(getICAO,meta=str)
 df["TC"] = df["messageHex"].apply(getTypeCode,meta =int)
 
 def clean_row(full_row: dict, eventos: list):
-    """
-    Prepara la fila para insertar en el dataframe limpio
-    """
+    """Prepara la fila para insertar en el dataframe limpio"""
     if full_row['ground']:
         # CUANDO ESTA EN TIERRA PUEDE NO EMITIR EL MENSAJE SURFACE POSITION,
         # QUE ES EXACTAMENTE LO QUE PASA Y NOS SALEN MUY POCAS FILAS CON GROUND = 1
@@ -146,6 +146,8 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
         'surf_lat': None,
         'surf_lon': None,
         'alt_feet': None,
+        'callsign': None,
+        'vortex': None,
     }
     umbral = 5 * 60 * 1000 # 5 minutos
     
@@ -154,6 +156,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     airPosClass = AirbornePositionMessage()
     velClass = AirborneVelocity()
     surPosClass = SurfacePositionMessage()
+    identifyClass = AircraftIdentificationMessage()
     logging.basicConfig(filename='errores.log', encoding='utf-8')
     for _, row in grupo.iterrows():
         try:
@@ -180,7 +183,9 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     'surf_vel': None,
                     'surf_lat': None,
                     'surf_lon': None,
-                    'alt_feet': None
+                    'alt_feet': None,
+                    'callsign': None,
+                    'vortex': None,
                 }
             
             ultimo_info['icao'] = row['ICAO']
@@ -192,6 +197,8 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
             if (surPosClass.match(typecode)):
                 ultimo_info["surf_vel"] = getSurfaceVelocity(row["messageHex"])
                 ultimo_info["surf_lat"], ultimo_info["surf_lon"] = getSurfacePosition(row["messageHex"])
+            elif (identifyClass.match(typecode)):
+                identifyClass.updateRowFromHex(ultimo_info, row["messageHex"])
             elif (velClass.match(typecode)):
                 ultimo_info["velocity"], _, _, _ = pms.adsb.velocity(row["messageHex"])
             elif (row["DL"] == 11 and ultimo_info['ground'] != 1):
@@ -224,6 +231,8 @@ meta = {
     "ground": int,
     "direccion": float,
     'alt_feet': float,
+    'callsign': str,
+    'vortex': str,
 }
 
 
