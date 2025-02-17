@@ -63,9 +63,9 @@ class StaticMap:
         ExtraFeatures().addExtraFeatures(self.mapa, Airplanes.capa_aviones)
 
     # GESTIÓN DEL MAPA RESULTANTE
-    def saveMap(self, nombre_mapa):
+    def saveMap(self, path):
         """Guarda el mapa con el nombre indicado, añadiéndole la extensión html"""
-        self.mapa.save(f"./mapas/{nombre_mapa}.html")
+        self.mapa.save(path)
 
     def showMap(self, nombre_mapa=None):
         """Muestra el mapa. En caso de no especificar el nombre, este será la fecha en la que se ha ejecutado la función"""
@@ -83,7 +83,7 @@ class StaticMap:
         if not os.path.exists(
             f"./mapas/{nombre_mapa}.html"
         ):  # En caso de que el mapa no haya sido guardado previamente, se guarda primero
-            self.saveMap(nombre_mapa)
+            self.saveMap(f"./mapas/{nombre_mapa}.html")
         webbrowser.open(
             f"file://{os.path.abspath(f"./mapas/{nombre_mapa}.html")}"
         )  # Abre el mapa en el navegador
@@ -95,9 +95,9 @@ class StaticMap:
         self.mapa = self.createMap()
         self.initializeMap(all=False)
 
-
-m = StaticMap()
 """
+m = StaticMap()
+
 timestamp_str1 = "2025-02-15 14:06:22"
 timestamp_str2 = "2025-02-15 14:06:25"
 timestamp_str3 = "2025-02-15 14:06:28"
@@ -111,7 +111,7 @@ m.addAirplane("jnsfu", 40.56, -3.56, True, 0, 70, timestamp_str3, 3)
 m.addAirplane("jnsfu", 40.52, -3.53, True, 0, 90, timestamp_str4, 4)
 m.addAirplane("jnsfu", 40.70, -3.80, False, 0, 90, timestamp_str5, 3)
 m.addAirplane("jnsfu", 40.71, -3.82, False, 0, 10, timestamp_str6, 2)
-"""
+
 
 df = pd.read_csv("data/ex2/preprocess_mapa_mini.csv")
 
@@ -124,3 +124,4 @@ for _, row in df.iterrows():
 
 
 m.showMap()
+"""
