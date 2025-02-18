@@ -13,8 +13,11 @@ table = table.drop(columns="Unnamed: 2")
 table["messageHex"] = table["message"].apply(base64toHEX,meta=str)
 table["DL"] = table["messageHex"].apply(getDownlink,meta=int)
 
-## Filtering messages by downlink format ==11
-table = table[table["DL"] == 11].reset_index()
+## Filtering messages by downlink format ==11 and removing corrupted messages
+#table = table[table["DL"] == 11].reset_index()
+filtroDL = table["DL"] == 11
+filtroCorrupto = table["messageHex"].apply(msgIsCorrupted, meta=bool)
+table = table[filtroDL & ~filtroCorrupto].reset_index()
 
 ## getting the icao
 table["ICAO"] = table["messageHex"].apply(getICAO,meta=str)
@@ -25,7 +28,6 @@ table["OnGround"] = table["messageHex"].apply(getOnGround,meta =int)
 table = table.dropna(subset=["OnGround"])
 
 ##timestamp
-
 
 
 table['timestamp'] = dd.to_datetime(table['ts_kafka'], unit='ms')
@@ -48,11 +50,8 @@ df = df.groupby(["day","hour","ICAO"])["OnGround"].unique().explode().reset_inde
 
 
 
-print("Nombes,",df.dtypes)
-
-
 with ProgressBar():
-    df.to_csv('data/ex1/preprocessed_ex2.csv', index=False) 
+    df.to_csv('data/ex1/parte1.csv', index=False) 
 
 
     
