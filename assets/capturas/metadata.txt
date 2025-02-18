@@ -1,0 +1,8 @@
++ captura_1_mensaje.png: mapa para una parte de los datos (2 dias)
+    utilizando decodificacion SIN even o odd
+
++ captura_even_odd.png: mapa para una parte de los datos (2 dias)
+    utilizando decodificacion CON even y odd
+
++ captura_mapa_semana.png: mapa para todos los datos
+    de la semana (1 al 7 diciembre de 2024)
