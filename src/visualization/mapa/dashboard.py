@@ -24,6 +24,29 @@ date_range = pd.date_range(start=df.iloc[0]['date'], end=str(df.iloc[-1]['date']
 decodeRangeValues = {i: date for i, date in enumerate(date_range)}
 
 app.layout = html.Div([
+    html.H3(
+        id="title-dynamic",
+        children="ANIMACIÓN DEL MAPA",
+        style={
+            'display': 'flex', 
+            'justify-content': 'center', 
+            'align-items': 'center',
+        }
+    ),
+    html.Iframe(
+        id="iframe_dyn_map",
+        src="/assets/mapa_dinamico.html",
+        style={"width": "100%", "height": "400px"}
+    ),
+    html.H3(
+        id="title-dynamic",
+        children=f"FILTRAR MOMENTOS DEL MAPA (RANGO MÁXIMO {MAX_HOURS_RANGE} HORAS)",
+        style={
+            'display': 'flex', 
+            'justify-content': 'center', 
+            'align-items': 'center',
+        }
+    ),
     html.Br(),
     dcc.RangeSlider(
         id="slider-param",
@@ -54,7 +77,7 @@ app.layout = html.Div([
     html.Br(),
     html.Iframe(
         id="iframe_map",
-        src="/assets/intro.html",  # Default page
+        #src="/assets/intro.html",  # Default page
         style={"width": "100%", "height": "700px"}
     ),
 ])

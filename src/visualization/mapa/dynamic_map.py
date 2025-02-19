@@ -7,7 +7,7 @@ from layers.airplanes import RoutesVelocity
 
 m = folium.Map(location=[40.51, -3.53], zoom_start=12)
 
-df = pd.read_csv("data/ex2/preprocess_mapa_mini.csv")
+df = pd.read_csv("data/ex2/preprocess_mapa_callsign.csv")
 df = df[~df.lat.isna() & ~df.lon.isna()]
 
 df['ts_kafka'] = pd.to_datetime(df['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%dT%H:%M:%S')
@@ -71,4 +71,4 @@ t = folium.plugins.TimestampedGeoJson(
 )
 t.add_to(m)
 
-m.show_in_browser()
+m.save('mapa_dinamico.html')
