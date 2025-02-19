@@ -70,7 +70,7 @@ class StaticMap:
         ExtraFeatures().addExtraFeatures(self.mapa, Airplanes.capa_aviones)
 
     # GESTIÓN DEL MAPA RESULTANTE
-    def saveMap(self, path, data):
+    def saveMap(self, data, path):
         """Guarda el mapa con el nombre indicado, añadiéndole la extensión html"""
         self.addAirplanes(data)
         self.addExtraFeatures()
@@ -116,7 +116,7 @@ m.addAirplane("jnsfu", 40.56, -3.56, True, 0, 70, timestamp_str3, 3)
 m.addAirplane("jnsfu", 40.52, -3.53, True, 0, 90, timestamp_str4, 4)
 m.addAirplane("jnsfu", 40.70, -3.80, False, 0, 90, timestamp_str5, 3)
 m.addAirplane("jnsfu", 40.71, -3.82, False, 0, 10, timestamp_str6, 2)
-"""
+
 m = StaticMap()
 
 df = pd.read_csv("data/ex2/preprocess_mapa_callsign.csv")
@@ -124,5 +124,6 @@ print(df.icao.unique())
 df = df[df['icao'] == '780d8f']
 
 m.showMap(df)
+"""
 
 

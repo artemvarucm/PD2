@@ -101,11 +101,9 @@ def generate_and_load(value_range):
     m.addAirplane("jnsfu", 40.70, -3.80, False, 0, 90, timestamp_str5, 3)
     m.addAirplane("jnsfu", 40.71, -3.82, False, 0, 10, timestamp_str6, 2)
     """
-    for _, row in df_filtered.iterrows():
-        m.addAirplane(row["icao"], row["lat"], row["lon"], row["ground"], row["direccion"], row["velocity"], row["datetime"], row["alt_feet"], row["callsign"])
 
     print('SAVING')
-    m.saveMap(file_path)
+    m.saveMap(df_filtered, file_path)
     m.reset()
     print('FINISHED')
     # Append timestamp to force browser to load fresh file
