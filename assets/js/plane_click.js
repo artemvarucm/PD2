@@ -1,15 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
     let trayectoriasLengths = {{trayectoriasLengths}};
-    console.log("TRAAAAA ",trayectoriasLengths)
+    //console.log("TRAAAAA ",trayectoriasLengths)
     let selectedAvionId = null;
 
     function assignIdsToPaths() {
         let polylines = document.querySelectorAll('path.leaflet-interactive');
         let avionIndex = 0;
         let segmentCounter = 0;
-        let ii = 0;
+        //let ii = 0;
         polylines.forEach((path) => {
-            console.log("ii=",ii)
+            //console.log("ii=",ii)
             
             if (segmentCounter >= trayectoriasLengths[avionIndex]) {
                 avionIndex++;
@@ -20,10 +20,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             let avionId = avionIndex;
             path.setAttribute('data-avion-id', avionId);
-            console.log("PA ", avionId)
+            //console.log("PA ", avionId)
             segmentCounter++;
             
-            ii = ii+ 1;
+            //ii = ii+ 1;
         });
     }
 
@@ -54,14 +54,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function assignEventListeners() {
         document.querySelectorAll('.leaflet-marker-icon').forEach((el, idx) => {
-            console.log("PATTTTTTTTTHH ", idx)
+            //console.log("PATTTTTTTTTHH ", idx)
             el.addEventListener('click', () => hideOthers(idx));
         });
     }
 
     function activateAllLayers() {
-        document.querySelectorAll('.leaflet-control-layers-selector').forEach(checkbox => {
-            if (!checkbox.checked) {
+        document.querySelectorAll('.leaflet-control-layers-selector').forEach((checkbox, index) => {
+            //console.log("CHECKBOX", checkbox, "III", index)
+            if (index !==4 && !checkbox.checked) {
                 checkbox.click(); // Activa las capas que estaban desactivadas
             }
         });

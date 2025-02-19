@@ -7,8 +7,10 @@ from static_map import StaticMap
 
 app = dash.Dash(__name__)
 
+MAX_HOURS_RANGE = 5 # para evitar problemas de rendimiento
+
 # Eliminamos filas sin latitud, longitud y ground
-df = pd.read_csv("data/ex2/preprocess_mapa_16_02.csv")
+df = pd.read_csv("data/ex2/preprocess_mapa_callsign.csv")
 df = df.dropna(subset=['lat', 'lon', 'ground'])
 df = df[(df.lat != None) & (df.lon != None) & (df.ground != None)]
 # Ordenamos de pasado a futuro
@@ -34,7 +36,7 @@ app.layout = html.Div([
         max=len(date_range) - 1,
         step=1,
         marks={i: {"label": date.strftime("%m-%d %H:%M"), "style": {"font-size": "16px"}} for i, date in enumerate(date_range) if date.hour == 0},
-        value=[0, len(date_range) - 1]
+        value=[0, MAX_HOURS_RANGE]
     ),
     html.Br(),
     html.H3(
@@ -44,6 +46,10 @@ app.layout = html.Div([
             'justify-content': 'center', 
             'align-items': 'center',
         }
+    ),
+    html.H3(
+        id="validation",
+        style={'color': 'red'}
     ),
     html.Br(),
     html.Iframe(
@@ -55,9 +61,9 @@ app.layout = html.Div([
 
 # Callback to generate and update the map
 @app.callback(
-    [Output("iframe_map", "src"), Output("slider-output", "children")],
+    [Output("iframe_map", "src"), Output("slider-output", "children"), Output("validation", "children")],
     [Input("slider-param", "value")],
-    prevent_initial_call=True
+    #prevent_initial_call=True
 )
 def generate_and_load(value_range):
     lowerBound = decodeRangeValues[value_range[0]]
@@ -65,6 +71,9 @@ def generate_and_load(value_range):
 
     lowerBound_ts = pd.Timestamp(lowerBound).timestamp() * 1000
     upperBound_ts = pd.Timestamp(upperBound).timestamp() * 1000
+
+    if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
+        return f"", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}", f"El rango de horas no puede superar {MAX_HOURS_RANGE} para simplificar la visualización."
 
     # Filtramos dataframe
     print('FILTERING')
@@ -92,15 +101,13 @@ def generate_and_load(value_range):
     m.addAirplane("jnsfu", 40.70, -3.80, False, 0, 90, timestamp_str5, 3)
     m.addAirplane("jnsfu", 40.71, -3.82, False, 0, 10, timestamp_str6, 2)
     """
-    for _, row in df_filtered.iterrows():
-        m.addAirplane(row["icao"], row["lat"], row["lon"], row["ground"], row["direccion"], row["velocity"], row["datetime"], row["alt_feet"])
 
     print('SAVING')
-    m.saveMap(file_path)
+    m.saveMap(df_filtered, file_path)
     m.reset()
     print('FINISHED')
     # Append timestamp to force browser to load fresh file
-    return f"/assets/generated.html?t={int(time.time())}", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}"
+    return f"/assets/generated.html?t={int(time.time())}", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}", ""
 
 if __name__ == "__main__":
     app.run_server(debug=False)
