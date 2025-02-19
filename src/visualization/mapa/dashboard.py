@@ -25,6 +25,11 @@ app.layout = html.Div([
     html.Br(),
     dcc.RangeSlider(
         id="slider-param",
+        tooltip = {
+            "always_visible": True,
+            "placement": "top",
+            "transform": "modulo24"
+        },
         min=0,
         max=len(date_range) - 1,
         step=1,
@@ -32,6 +37,14 @@ app.layout = html.Div([
         value=[0, len(date_range) - 1]
     ),
     html.Br(),
+    html.H3(
+        id="slider-output",
+        style={
+            'display': 'flex', 
+            'justify-content': 'center', 
+            'align-items': 'center',
+        }
+    ),
     html.Br(),
     html.Iframe(
         id="iframe_map",
@@ -42,7 +55,7 @@ app.layout = html.Div([
 
 # Callback to generate and update the map
 @app.callback(
-    Output("iframe_map", "src"),
+    [Output("iframe_map", "src"), Output("slider-output", "children")],
     [Input("slider-param", "value")],
     prevent_initial_call=True
 )
@@ -87,7 +100,7 @@ def generate_and_load(value_range):
     m.reset()
     print('FINISHED')
     # Append timestamp to force browser to load fresh file
-    return f"/assets/generated.html?t={int(time.time())}"
+    return f"/assets/generated.html?t={int(time.time())}", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}"
 
 if __name__ == "__main__":
     app.run_server(debug=False)
