@@ -13,7 +13,7 @@ from datetime import datetime
 locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
 
 # Cargar el dataset
-df = pd.read_csv("data/ex1/preprocessed_ex2.csv")
+df = pd.read_csv("../../../data/ex1/parte1.csv")
 
 # Estilo externo para la aplicación
 external_stylesheets = ['styles.css']
@@ -222,8 +222,8 @@ def update_ground_line(dia):
     {"day": d, "hour": h} 
     for d in days for h in range(24)
     ])
-    df_merged = all_days.merge(df, on=["day","hour"], how="left").fillna(0)
-    ground_count = df_merged[df_merged["OnGround"] == 1].groupby(["day", "hour"]).size().reset_index(name="count")
+    df_merged_ground = all_days.merge(df, on=["day","hour"], how="left").fillna(0)
+    ground_count = df_merged_ground[df_merged_ground["OnGround"] == 1].groupby(["day", "hour"]).size().reset_index(name="count")
    
     fig_ground = px.line(ground_count, x="hour", y="count", color="day",
                         labels={"hour": "Hora del día", "count": "Cantidad de aeronaves", "day": "Día"})
@@ -249,8 +249,8 @@ def update_on_air_line(dia):
         {"day": d, "hour": h} 
         for d in days for h in range(24)
         ])
-        df_merged = all_days.merge(df, on=["day","hour"], how="left").fillna(0)
-        air_count = df_merged[df_merged["OnGround"] == 0].groupby(["day", "hour"]).size().reset_index(name="count")
+        df_merged_air = all_days.merge(df, on=["day","hour"], how="left").fillna(0)
+        air_count = df_merged_air[df_merged_air["OnGround"] == 0].groupby(["day", "hour"]).size().reset_index(name="count")
 
 
         fig_air = px.line(air_count, x="hour", y="count", color="day",
