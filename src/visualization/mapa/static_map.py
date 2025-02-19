@@ -89,7 +89,7 @@ class StaticMap:
 
         if not os.path.exists(f"./mapas/{nombre_mapa}.html"):
             # En caso de que el mapa no haya sido guardado previamente, se guarda primero
-            self.saveMap(f"./mapas/{nombre_mapa}.html", data)
+            self.saveMap(data, f"./mapas/{nombre_mapa}.html")
 
         # Abre el mapa en el navegador
         webbrowser.open(
