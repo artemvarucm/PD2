@@ -75,6 +75,14 @@ app.layout = html.Div([
         html.Div([
             dcc.Graph(id='graph-with-speciality')
         ], id="g4"),
+        ## Grafico 5
+         html.Div([
+            dcc.Graph(id='Cantidad de aviones en tierra por hora')
+        ], id="g5"),
+         ## Grafico 6
+         html.Div([
+            dcc.Graph(id='Cantidad de aviones en aire por hora')
+        ], id="g6")
         
     ], id="parent")
 ])
@@ -203,6 +211,62 @@ def update_heatmap(dia):
         yaxis_title="Días",
     )
     return fig 
+
+# Callback para actualizar el gráfico de linea para aviones en tierra
+@callback(
+    Output('Cantidad de aviones en tierra por hora', 'figure'),
+    Input('dia_1', 'value'),
+)
+def update_ground_line(dia):
+    all_days = pd.DataFrame([
+    {"day": d, "hour": h} 
+    for d in days for h in range(24)
+    ])
+    df_merged = all_days.merge(df, on=["day","hour"], how="left").fillna(0)
+    ground_count = df_merged[df_merged["OnGround"] == 1].groupby(["day", "hour"]).size().reset_index(name="count")
+   
+    fig_ground = px.line(ground_count, x="hour", y="count", color="day",
+                        labels={"hour": "Hora del día", "count": "Cantidad de aeronaves", "day": "Día"})
+
+    fig_ground.update_layout(
+        xaxis=dict(tickmode="linear", dtick=1),
+        title=dict(       
+                text = "Cantidad de aviones en TIERRA por hora",
+                x = 0.5,
+            ),
+        )
+    return fig_ground
+
+
+# Callback para actualizar el gráfico de linea para aviones en tierra
+@callback(
+    Output('Cantidad de aviones en aire por hora', 'figure'),
+    Input('dia_1', 'value'),
+)
+
+def update_on_air_line(dia):
+        all_days = pd.DataFrame([
+        {"day": d, "hour": h} 
+        for d in days for h in range(24)
+        ])
+        df_merged = all_days.merge(df, on=["day","hour"], how="left").fillna(0)
+        air_count = df_merged[df_merged["OnGround"] == 0].groupby(["day", "hour"]).size().reset_index(name="count")
+
+
+        fig_air = px.line(air_count, x="hour", y="count", color="day",
+                        labels={"hour": "Hora del día", "count": "Cantidad de aeronaves", "day": "Día"})
+
+        fig_air.update_layout(
+            xaxis=dict(tickmode="linear", dtick=1),
+            title=dict(       
+                    text = "Cantidad de aviones en AIRE por hora",
+                    x = 0.5, 
+                ),
+        )
+
+        
+        return fig_air
+
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
