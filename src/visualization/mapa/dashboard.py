@@ -8,7 +8,7 @@ from static_map import StaticMap
 app = dash.Dash(__name__)
 
 # Eliminamos filas sin latitud, longitud y ground
-df = pd.read_csv("data/ex2/preprocess_mapa_16_02.csv")
+df = pd.read_csv("data/ex2/preprocess_mapa_callsign.csv")
 df = df.dropna(subset=['lat', 'lon', 'ground'])
 df = df[(df.lat != None) & (df.lon != None) & (df.ground != None)]
 # Ordenamos de pasado a futuro
@@ -93,7 +93,7 @@ def generate_and_load(value_range):
     m.addAirplane("jnsfu", 40.71, -3.82, False, 0, 10, timestamp_str6, 2)
     """
     for _, row in df_filtered.iterrows():
-        m.addAirplane(row["icao"], row["lat"], row["lon"], row["ground"], row["direccion"], row["velocity"], row["datetime"], row["alt_feet"])
+        m.addAirplane(row["icao"], row["lat"], row["lon"], row["ground"], row["direccion"], row["velocity"], row["datetime"], row["alt_feet"], row["callsign"])
 
     print('SAVING')
     m.saveMap(file_path)
