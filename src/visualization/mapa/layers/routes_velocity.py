@@ -28,22 +28,8 @@ class RoutesVelocity(Routes):
             ).add_to(RoutesVelocity.capa_rutas)
 
     @staticmethod
-    def sameRoute(id_avion, timestamp):
-        new_timestamp = datetime.strptime(timestamp, Routes.formato_fechas)
-        last_timestamp = datetime.strptime(
-            RoutesVelocity.ruta_aviones[id_avion]["last_timestamp"],
-            Routes.formato_fechas,
-        )
-
-        diferencia_tiempo = new_timestamp - last_timestamp
-
-        if (
-            (diferencia_tiempo.total_seconds() >= 1800)
-            and RoutesVelocity.ruta_aviones[id_avion]["onGround"]
-            and RoutesVelocity.ruta_aviones[id_avion]["been_on_air"]
-        ):
-            return False
-        return True
+    def sameRoute(id_avion, callsign):
+        return RoutesVelocity.ruta_aviones[id_avion]['last_callsign'] == callsign
 
     @staticmethod
     def addLocation(id_avion, latitud, longitud, **kwargs):
@@ -65,18 +51,13 @@ class RoutesVelocity(Routes):
                     #"ruta_lenta": [],
                     "ultima_velocidad": None,
                 },
-                "last_timestamp": None,
-                "onGround": False,
-                "been_on_air": False,
+                "last_callsign": None
             }
 
         RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"].append(
             (round(latitud, 3), round(longitud, 3), velocidad, callsign)
         )  # Se añade la ubicación a su ruta
-        RoutesVelocity.ruta_aviones[id_avion]["last_timestamp"] = timestamp
-        RoutesVelocity.ruta_aviones[id_avion]["onGround"] = onGround
-        if not RoutesVelocity.ruta_aviones[id_avion]["been_on_air"]:
-            RoutesVelocity.ruta_aviones[id_avion]["been_on_air"] = not onGround
+        RoutesVelocity.ruta_aviones[id_avion]['last_callsign'] = callsign
 
 
     @staticmethod
