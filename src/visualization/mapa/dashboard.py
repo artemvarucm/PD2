@@ -36,7 +36,7 @@ app.layout = html.Div([
         max=len(date_range) - 1,
         step=1,
         marks={i: {"label": date.strftime("%m-%d %H:%M"), "style": {"font-size": "16px"}} for i, date in enumerate(date_range) if date.hour == 0},
-        value=[0, len(date_range) - 1]
+        value=[0, MAX_HOURS_RANGE]
     ),
     html.Br(),
     html.H3(
@@ -63,7 +63,7 @@ app.layout = html.Div([
 @app.callback(
     [Output("iframe_map", "src"), Output("slider-output", "children"), Output("validation", "children")],
     [Input("slider-param", "value")],
-    prevent_initial_call=True
+    #prevent_initial_call=True
 )
 def generate_and_load(value_range):
     lowerBound = decodeRangeValues[value_range[0]]
