@@ -22,7 +22,7 @@ class RoutesHistory(Routes):
 
     @staticmethod
     def addLocation(id_avion, latitud, longitud, **kwargs):
-        timestamp, onGround, callsign = kwargs.get("timestamp"), kwargs.get("onGround"), kwargs.get("callsign")
+        callsign = kwargs.get("callsign")
         if id_avion not in RoutesHistory.rutas_avion:
             RoutesHistory.rutas_avion[id_avion] = [
                 {

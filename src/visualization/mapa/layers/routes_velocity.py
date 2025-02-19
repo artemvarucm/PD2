@@ -33,15 +33,13 @@ class RoutesVelocity(Routes):
 
     @staticmethod
     def addLocation(id_avion, latitud, longitud, **kwargs):
-        timestamp, velocidad, onGround, callsign = (
-            kwargs.get("timestamp"),
+        velocidad, callsign = (
             kwargs.get("velocidad", 0),
-            kwargs.get("onGround"),
             kwargs.get("callsign"),
         )
 
         if (id_avion not in RoutesVelocity.ruta_aviones) or (
-            not RoutesVelocity.sameRoute(id_avion, timestamp)
+            not RoutesVelocity.sameRoute(id_avion, callsign)
         ):
             RoutesVelocity.ruta_aviones[id_avion] = {
                 "rutas": {

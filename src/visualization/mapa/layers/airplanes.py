@@ -126,6 +126,7 @@ class Airplanes:
             longitud=longitud,
             timestamp=timestamp,
             onGround=on_ground,
+            callsign=callsign
         )
 
     @staticmethod
