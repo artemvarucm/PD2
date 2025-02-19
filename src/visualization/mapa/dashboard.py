@@ -7,6 +7,8 @@ from static_map import StaticMap
 
 app = dash.Dash(__name__)
 
+MAX_HOURS_RANGE = 5 # para evitar problemas de rendimiento
+
 # Eliminamos filas sin latitud, longitud y ground
 df = pd.read_csv("data/ex2/preprocess_mapa_callsign.csv")
 df = df.dropna(subset=['lat', 'lon', 'ground'])
@@ -45,6 +47,10 @@ app.layout = html.Div([
             'align-items': 'center',
         }
     ),
+    html.H3(
+        id="validation",
+        style={'color': 'red'}
+    ),
     html.Br(),
     html.Iframe(
         id="iframe_map",
@@ -55,7 +61,7 @@ app.layout = html.Div([
 
 # Callback to generate and update the map
 @app.callback(
-    [Output("iframe_map", "src"), Output("slider-output", "children")],
+    [Output("iframe_map", "src"), Output("slider-output", "children"), Output("validation", "children")],
     [Input("slider-param", "value")],
     prevent_initial_call=True
 )
@@ -65,6 +71,9 @@ def generate_and_load(value_range):
 
     lowerBound_ts = pd.Timestamp(lowerBound).timestamp() * 1000
     upperBound_ts = pd.Timestamp(upperBound).timestamp() * 1000
+
+    if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
+        return f"", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}", f"El rango de horas no puede superar {MAX_HOURS_RANGE} para simplificar la visualización."
 
     # Filtramos dataframe
     print('FILTERING')
@@ -100,7 +109,7 @@ def generate_and_load(value_range):
     m.reset()
     print('FINISHED')
     # Append timestamp to force browser to load fresh file
-    return f"/assets/generated.html?t={int(time.time())}", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}"
+    return f"/assets/generated.html?t={int(time.time())}", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}", ""
 
 if __name__ == "__main__":
     app.run_server(debug=False)
