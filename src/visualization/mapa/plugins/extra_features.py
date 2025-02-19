@@ -53,7 +53,7 @@ class ExtraFeatures:
     def addExtraFeatures(mapa, capa):
         """Añade todas las funcionalidades extras al mapa"""
         ExtraFeatures.addGeocoder(mapa)
-        ExtraFeatures.addDayAndNight(mapa)
+        #ExtraFeatures.addDayAndNight(mapa)
         ExtraFeatures.addFullScreen(mapa)
         ExtraFeatures.addLocateUser(mapa)
         ExtraFeatures.addMousePosition(mapa)

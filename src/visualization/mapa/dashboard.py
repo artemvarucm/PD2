@@ -10,7 +10,7 @@ app = dash.Dash(__name__)
 # Eliminamos filas sin latitud, longitud y ground
 df = pd.read_csv("data/ex2/preprocess_mapa_16_02.csv")
 df = df.dropna(subset=['lat', 'lon', 'ground'])
-
+df = df[(df.lat != None) & (df.lon != None) & (df.ground != None)]
 # Ordenamos de pasado a futuro
 df = df.sort_values(by='ts_kafka', ascending=True)
 
@@ -34,16 +34,17 @@ app.layout = html.Div([
     html.Br(),
     html.Br(),
     html.Iframe(
-        id="iframe",
-        #src="/assets/1.html",  # Default page
-        style={"width": "100%", "height": "500px"}
+        id="iframe_map",
+        src="/assets/intro.html",  # Default page
+        style={"width": "100%", "height": "700px"}
     ),
 ])
 
 # Callback to generate and update the map
 @app.callback(
-    Output("iframe", "src"),
-    [Input("slider-param", "value")]
+    Output("iframe_map", "src"),
+    [Input("slider-param", "value")],
+    prevent_initial_call=True
 )
 def generate_and_load(value_range):
     lowerBound = decodeRangeValues[value_range[0]]
@@ -59,6 +60,7 @@ def generate_and_load(value_range):
     print(f'FILTERED {filter_bounds.sum()} ROWS')
     # Creamos el mapa
     file_path = "src/visualization/mapa/assets/generated.html"
+
     m = StaticMap()
     print('ADDING AIRPLANES')
     """
@@ -82,9 +84,10 @@ def generate_and_load(value_range):
 
     print('SAVING')
     m.saveMap(file_path)
+    m.reset()
     print('FINISHED')
     # Append timestamp to force browser to load fresh file
     return f"/assets/generated.html?t={int(time.time())}"
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=False)

@@ -65,30 +65,27 @@ class StaticMap:
     # GESTIÓN DEL MAPA RESULTANTE
     def saveMap(self, path):
         """Guarda el mapa con el nombre indicado, añadiéndole la extensión html"""
-        self.mapa.save(path)
-
-    def showMap(self, nombre_mapa=None):
-        """Muestra el mapa. En caso de no especificar el nombre, este será la fecha en la que se ha ejecutado la función"""
-
         self.addExtraFeatures()
         self.paintAirplanes()
 
         script = Airplanes.script_show_one_route_on_click()
 
         self.mapa.get_root().html.add_child(folium.Element(script))
+        self.mapa.save(path)
 
+    def showMap(self, nombre_mapa=None):
+        """Muestra el mapa en el navegador. En caso de no especificar el nombre, este será la fecha en la que se ha ejecutado la función"""
         if nombre_mapa is None:
             nombre_mapa = time.strftime("%d-%m-%Y_%H-%M-%S")
 
-        if not os.path.exists(
-            f"./mapas/{nombre_mapa}.html"
-        ):  # En caso de que el mapa no haya sido guardado previamente, se guarda primero
+        if not os.path.exists(f"./mapas/{nombre_mapa}.html"):
+            # En caso de que el mapa no haya sido guardado previamente, se guarda primero
             self.saveMap(f"./mapas/{nombre_mapa}.html")
+
+        # Abre el mapa en el navegador
         webbrowser.open(
             f"file://{os.path.abspath(f"./mapas/{nombre_mapa}.html")}"
-        )  # Abre el mapa en el navegador
-
-        self.reset()
+        )
 
     def reset(self):
         """Borra las capas que varían con el tiempo (aviones y rutas)"""
