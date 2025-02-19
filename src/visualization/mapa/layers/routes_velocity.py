@@ -14,15 +14,15 @@ class RoutesVelocity(Routes):
         #colores = {"ruta_rapida": "red", "ruta_media": "orange", "ruta_lenta": "green"}
 
         for i in range(1, len(RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"])):
-            lat1, lon1, vel1 = RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][i-1]
-            lat2, lon2, vel2 = RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][i]
+            lat1, lon1, vel1, callsign1 = RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][i-1]
+            lat2, lon2, vel2, callsign2 = RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][i]
             color = RoutesVelocity.get_color_by_speed(vel1)
             folium.PolyLine(
                 [(lat1, lon1), (lat2, lon2)],
                 color=color,
                 weight=2,
                 opacity=0.8,
-                tooltip=f"Trayectoria Avión {id_avion}",
+                tooltip=f"Trayectoria Avión {id_avion}. Callsign: {callsign1}",
                 #class_name=f"trayectoria trayectoria-{id_avion}",
                 #popup=f"Velocidad: {vel1} nudos -- Altura {altura}",
             ).add_to(RoutesVelocity.capa_rutas)
@@ -47,10 +47,11 @@ class RoutesVelocity(Routes):
 
     @staticmethod
     def addLocation(id_avion, latitud, longitud, **kwargs):
-        timestamp, velocidad, onGround = (
+        timestamp, velocidad, onGround, callsign = (
             kwargs.get("timestamp"),
             kwargs.get("velocidad", 0),
             kwargs.get("onGround"),
+            kwargs.get("callsign"),
         )
 
         if (id_avion not in RoutesVelocity.ruta_aviones) or (
@@ -70,7 +71,7 @@ class RoutesVelocity(Routes):
             }
 
         RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"].append(
-            (round(latitud, 3), round(longitud, 3), velocidad)
+            (round(latitud, 3), round(longitud, 3), velocidad, callsign)
         )  # Se añade la ubicación a su ruta
         RoutesVelocity.ruta_aviones[id_avion]["last_timestamp"] = timestamp
         RoutesVelocity.ruta_aviones[id_avion]["onGround"] = onGround

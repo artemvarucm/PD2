@@ -95,7 +95,7 @@ class Airplanes:
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
     @staticmethod
-    def addAirplane(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura):
+    def addAirplane(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign):
         """Añade el avión para que pueda ser pintado en el mapa"""
         if id_avion not in Airplanes.aviones:
             Airplanes.aviones[id_avion] = {
@@ -118,6 +118,7 @@ class Airplanes:
             timestamp=timestamp,
             onGround=on_ground,
             velocidad=velocidad,
+            callsign=callsign
         )
         RoutesHistory.addLocation(
             id_avion=id_avion,

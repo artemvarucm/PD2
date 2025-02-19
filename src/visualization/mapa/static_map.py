@@ -49,9 +49,9 @@ class StaticMap:
         Airplanes.paintAirplanes(self.mapa)
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
-    def addAirplane(self, id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura):
+    def addAirplane(self, id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign):
         """Añade el avión para que pueda ser pintado en el mapa. Además, también servirá para pintar su ruta"""
-        Airplanes.addAirplane(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura)
+        Airplanes.addAirplane(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign)
 
     def deleteAirplane(self, id_avion):
         """Borra el avión"""
