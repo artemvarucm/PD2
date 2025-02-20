@@ -34,7 +34,7 @@ class StaticMap:
         """Añade todas las capas del mapa"""
         self.paintRadars()
         self.paintLandingStrips()
-        self.paintAirplanes()
+        self.paintVehicles()
 
     # PAINT RADARES
     def paintRadars(self):
@@ -45,24 +45,24 @@ class StaticMap:
         LandingStrips.addLandingStripsLayers(self.mapa)
 
     # PAINT AVIONES Y SUS RUTAS
-    def paintAirplanes(self):
-        Airplanes.paintAirplanes(self.mapa)
+    def paintVehicles(self):
+        Airplanes.paintVehicles(self.mapa)
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
-    def addAirplane(self, id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign):
+    def addVehicle(self, id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign, vehicle_type):
         """Añade el avión para que pueda ser pintado en el mapa. Además, también servirá para pintar su ruta"""
-        Airplanes.addAirplane(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign)
+        Airplanes.addVehicle(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign, vehicle_type)
     
-    def addAirplanes(self, data):
+    def addVehicles(self, data):
         data['ts_kafka'] = pd.to_datetime(data['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%d %H:%M:%S')
         for _, row in data.iterrows():
             if pd.notna(row["ground"]) and pd.notna(row["lat"]) and pd.notna(row["lon"]) and  row["ground"] is not None and row["lat"] is not None and row["lon"] is not None: #on ground
                 #print(f"ICAO -- {row["icao"]} , LAT -- {row["lat"]}, LON -- {row["lon"]}, VELOCITY -- {row["velocity"]}, DIRECCION -- {row["direccion"]}")
-                self.addAirplane(row["icao"], row["lat"],row["lon"],row["ground"], row["direccion"], row["velocity"], row["ts_kafka"], row["alt_feet"], row['callsign'])
+                self.addVehicle(row["icao"], row["lat"],row["lon"],row["ground"], row["direccion"], row["velocity"], row["ts_kafka"], row["alt_feet"], row['callsign'], row['aircraft_type'])
 
     def deleteAirplane(self, id_avion):
         """Borra el avión"""
-        Airplanes.deleteAirplane(id_avion)
+        Airplanes.deleteVehicle(id_avion)
 
     # FUNCIONALIDADES EXTRAS EN EL MAPA
     def addExtraFeatures(self):
@@ -72,9 +72,9 @@ class StaticMap:
     # GESTIÓN DEL MAPA RESULTANTE
     def saveMap(self, data, path):
         """Guarda el mapa con el nombre indicado, añadiéndole la extensión html"""
-        self.addAirplanes(data)
+        self.addVehicles(data)
         self.addExtraFeatures()
-        self.paintAirplanes()
+        self.paintVehicles()
 
         script = Airplanes.script_show_one_route_on_click()
 
@@ -95,6 +95,7 @@ class StaticMap:
         webbrowser.open(
             f"file://{os.path.abspath(f"./mapas/{nombre_mapa}.html")}"
         )
+
     def reset(self):
         """Borra las capas que varían con el tiempo (aviones y rutas)"""
         self.mapa = self.createMap()

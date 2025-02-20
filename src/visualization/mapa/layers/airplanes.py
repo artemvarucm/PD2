@@ -9,8 +9,8 @@ class Airplanes:
     aviones = dict()
 
     @staticmethod
-    def createDescriptionAirplane(id_avion, latitud, longitud, timestamp, velocidad=None):
-        """Crea el tooltip del avión"""
+    def createDescriptionVehicle(id_avion, latitud, longitud, timestamp, velocidad=None):
+        """Crea el tooltip del vehiculo"""
         if not velocidad:
             velocidad = "-"
         return f"""
@@ -23,12 +23,18 @@ class Airplanes:
                     """
 
     @staticmethod
-    def airplaneIcon(onGround, rotation):
-        """Devuelve el icono correspondiente según el avión esté en el aire o en tierra"""
-        if onGround:
-            path_icon = "./assets/icons/airplane_ground.svg"
-        else:
-            path_icon = "./assets/icons/airplane_air.svg"
+    def vehicleIcon(onGround, rotation, vehicle_type=None):
+        """Devuelve el icono correspondiente según el vehiculo esté en el aire o en tierra"""
+        if vehicle_type == "Rotorcraft":
+             if onGround:
+                path_icon = "./assets/icons/helicopter_ground.svg"
+             else:
+                path_icon = "./assets/icons/helicopter_air.svg"
+        else:  
+            if onGround:
+                path_icon = "./assets/icons/airplane_ground.svg"
+            else:
+                path_icon = "./assets/icons/airplane_air.svg"
        
         with open(path_icon, "r") as file:
             svg_data = file.read()
@@ -40,6 +46,7 @@ class Airplanes:
 
     @staticmethod
     def generateImageHeights(id_avion):
+        """Genera la gráfica de alturas del vehiculo"""
         x = np.arange(len(Airplanes.aviones[id_avion]["alturas"]))
         y = Airplanes.aviones[id_avion]["alturas"]
         fig = px.line(x=x, y=y, width=600, height=400, markers=True)
@@ -61,32 +68,33 @@ class Airplanes:
         return popup
 
     @staticmethod
-    def paintAirplane(id_avion, latitud, longitud, on_ground, rotation, timestamp, velocidad):
-        """Pinta el avión en el mapa"""
+    def paintVehicle(id_avion, latitud, longitud, on_ground, rotation, timestamp, velocidad, vehicle_type):
+        """Pinta el vehiculo en el mapa"""
 
         folium.Marker(
             location=[latitud, longitud],
             tooltip=folium.Tooltip(
-                Airplanes.createDescriptionAirplane(id_avion, latitud, longitud, timestamp, velocidad),
+                Airplanes.createDescriptionVehicle(id_avion, latitud, longitud, timestamp, velocidad),
                 max_width=300,
             ),
             icao=id_avion,
             popup=Airplanes.generateImageHeights(id_avion),
-            icon=Airplanes.airplaneIcon(on_ground, rotation),
+            icon=Airplanes.vehicleIcon(on_ground, rotation, vehicle_type),
         ).add_to(Airplanes.capa_aviones)
 
     @staticmethod
-    def paintAirplanes(mapa):
-        """Pinta todos los aviones en el mapa. Además, también pinta sus rutas"""
+    def paintVehicles(mapa):
+        """Pinta todos los vehiculos en el mapa. Además, también pinta sus rutas"""
         for id_avion in Airplanes.aviones:
-            Airplanes.paintAirplane(
+            Airplanes.paintVehicle(
                 id_avion,
                 RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][-1][0],
                 RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"][-1][1],
                 Airplanes.aviones[id_avion]["onGround"],
                 Airplanes.aviones[id_avion]["rotacion"],
                 Airplanes.aviones[id_avion]["timestamp"], 
-                Airplanes.aviones[id_avion]["velocidad"]
+                Airplanes.aviones[id_avion]["velocidad"],
+                Airplanes.aviones[id_avion]["vehicle_type"]
             )
             RoutesVelocity.paintRoute(id_avion)
             RoutesHistory.paintRoute(id_avion)
@@ -97,20 +105,22 @@ class Airplanes:
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
     @staticmethod
-    def addAirplane(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign):
-        """Añade el avión para que pueda ser pintado en el mapa"""
+    def addVehicle(id_avion, latitud, longitud, on_ground, rotacion, velocidad, timestamp, altura, callsign, vehicle_type):
+        """Añade el vehiculo para que pueda ser pintado en el mapa"""
         if id_avion not in Airplanes.aviones:
             Airplanes.aviones[id_avion] = {
                 "alturas": [],
                 "onGround": None,
                 "rotacion": None,
-                "timestamp": timestamp,
+                "timestamp": None,
                 "velocidad": None,
+                "vehicle_type": None
             }
         Airplanes.aviones[id_avion]["onGround"] = on_ground
         Airplanes.aviones[id_avion]["rotacion"] = rotacion
         Airplanes.aviones[id_avion]["timestamp"] = timestamp
         Airplanes.aviones[id_avion]["velocidad"] = velocidad
+        Airplanes.aviones[id_avion]["vehicle_type"] = vehicle_type
 
         if altura is not None:
             Airplanes.aviones[id_avion]["alturas"].append(altura)
@@ -134,8 +144,8 @@ class Airplanes:
         )
 
     @staticmethod
-    def deleteAirplane(id_avion):
-        """Borra el avión"""
+    def deleteVehicle(id_avion):
+        """Borra el vehiculo"""
         if id_avion in Airplanes.aviones:
             del Airplanes.aviones[id_avion]
         RoutesVelocity.deleteAirplane(id_avion)
