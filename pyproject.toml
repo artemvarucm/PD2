@@ -18,4 +18,5 @@ dependencies = [
     "dash>=2.18.2",
     "missingno>=0.5.2",
     "plotly-express>=0.4.1",
+    "shapely>=2.0.7",
 ]

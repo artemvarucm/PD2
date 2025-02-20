@@ -2,6 +2,7 @@ import dask.dataframe as dd
 import pandas as pd
 import time
 import pyModeS as pms
+from utils import *
 import base64
 from dask.diagnostics import ProgressBar
 
@@ -49,39 +50,8 @@ vortexDictionary = {
 }
 
 
-def encodeHex(b64):
-    return base64.b64decode(b64).hex()
-
-
-def getDownlink(hex):
-    return pms.df(hex)
-
-
-def getTypeCode(hex):
-    return pms.common.typecode(hex)
-
-
-def getICAO(hex):
-    return (str(pms.common.icao(hex))).upper()
-
-
 def getCA(hex):
     return pms.bin2int(pms.hex2bin(hex)[5:8])
-
-
-def msgIsCorrupted(hex):
-    return (pms.crc(hex) != 0)
-
-
-def getOnGround(hex):
-    decimal_value = pms.bin2int(pms.hex2bin(hex)[5:8])
-    if decimal_value == 4:
-        return 1
-    elif decimal_value == 5:
-        return 0
-    else:
-        return None
-
 
 def getAircraftType(hex):
     tc = getTypeCode(hex)
@@ -92,12 +62,10 @@ def getAircraftType(hex):
     return None
 
 
-
-
 i = time.time()
 df = dd.read_csv("E:/UniversidadCoding/Tercero/PD2/datos/semana/datosSemana.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
-df["messageHex"] = df["message"].apply(encodeHex, meta=str)
+df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
 df["DL"] = df["messageHex"].apply(getDownlink, meta=int)
 
 
@@ -117,4 +85,4 @@ df["hora"] = df["timestamp"].dt.hour
 df["TC"] = df["messageHex"].apply(getTypeCode, meta=int)
 df = df.repartition(npartitions=1)
 with ProgressBar():
-    df.to_csv('datos_semana', index=False)
+    df.to_csv('datos_semana', index=False, single_file=True)
