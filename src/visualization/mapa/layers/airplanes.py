@@ -85,15 +85,15 @@ class Airplanes:
             df,
             x="Nº Mensaje",
             y="Altura",
-            width=600,
-            height=400,
+            #width=350,
+            #height=20,
             markers=True,
             hover_data={"Latitud": True, "Longitud": True}  # Agregar datos extra al hover
         )
 
         # Configuración del layout del gráfico
         fig.update_layout(
-            title_text="Alturas del avión con el paso del tiempo",
+            title_text="Alturas del avión",
             title_x=0.5,
             yaxis_title="Altura",
             yaxis=dict(showgrid=False),
@@ -146,7 +146,7 @@ class Airplanes:
         # Insertar el JS en el HTML del gráfico
         html_with_js = html + custom_js
 
-        iframe = branca.element.IFrame(html=html_with_js, width=620, height=420)
+        iframe = branca.element.IFrame(html=html_with_js, width=310, height=210)
         popup = folium.Popup(iframe)
         return popup
 

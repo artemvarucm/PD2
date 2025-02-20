@@ -58,7 +58,7 @@ class StaticMap:
         for _, row in data.iterrows():
             if pd.notna(row["ground"]) and pd.notna(row["lat"]) and pd.notna(row["lon"]) and  row["ground"] is not None and row["lat"] is not None and row["lon"] is not None: #on ground
                 #print(f"ICAO -- {row["icao"]} , LAT -- {row["lat"]}, LON -- {row["lon"]}, VELOCITY -- {row["velocity"]}, DIRECCION -- {row["direccion"]}")
-                self.addVehicle(row["icao"], row["lat"],row["lon"],row["ground"], row["direccion"], row["velocity"], row["ts_kafka"], row["alt_feet"], row['callsign'], row['aircraft_type'])
+                self.addVehicle(row["icao"], row["lat"],row["lon"],row["ground"], row["direccion"], row["velocity"], row["ts_kafka"], row["alt_feet"], row['callsign'], row['vortex'])
 
     def deleteAirplane(self, id_avion):
         """Borra el avión"""
