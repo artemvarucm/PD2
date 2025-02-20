@@ -1,35 +1,28 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener("DOMContentLoaded", function() {
     let trayectoriasLengths = {{trayectoriasLengths}};
-    //console.log("TRAAAAA ",trayectoriasLengths)
     let selectedAvionId = null;
-
     function assignIdsToPaths() {
         let polylines = document.querySelectorAll('path.leaflet-interactive');
         let avionIndex = 0;
         let segmentCounter = 0;
-        //let ii = 0;
+
         polylines.forEach((path) => {
-            //console.log("ii=",ii)
-            
             if (segmentCounter >= trayectoriasLengths[avionIndex]) {
                 avionIndex++;
                 segmentCounter = 0;
-                while (trayectoriasLengths[avionIndex] === 0){
+                while (trayectoriasLengths[avionIndex] === 0) {
                     avionIndex++;
                 }
             }
             let avionId = avionIndex;
             path.setAttribute('data-avion-id', avionId);
-            //console.log("PA ", avionId)
             segmentCounter++;
-            
-            //ii = ii+ 1;
         });
     }
 
     function hideOthers(selectedId) {
         selectedAvionId = selectedId;
-
+        console.log("SELECTEDID", selectedId)
         document.querySelectorAll('.leaflet-marker-icon').forEach((marker, idx) => {
             marker.style.display = (idx === selectedId) ? 'block' : 'none';
         });
@@ -54,28 +47,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function assignEventListeners() {
         document.querySelectorAll('.leaflet-marker-icon').forEach((el, idx) => {
-            //console.log("PATTTTTTTTTHH ", idx)
             el.addEventListener('click', () => hideOthers(idx));
         });
     }
 
     function activateAllLayers() {
         document.querySelectorAll('.leaflet-control-layers-selector').forEach((checkbox, index) => {
-            //console.log("CHECKBOX", checkbox, "III", index)
-            if (index !==4 && !checkbox.checked) {
-                checkbox.click(); // Activa las capas que estaban desactivadas
+            if (index !== 4 && !checkbox.checked) {
+                checkbox.click();
             }
         });
-
-        setTimeout(() => resetAll(), 500); // Esperamos un poco para que se activen antes de resetear
+        setTimeout(() => resetAll(), 500);
     }
 
     const observer = new MutationObserver(() => {
         resetAll();
     });
-
     observer.observe(document.querySelector('.leaflet-control-layers'), { childList: true, subtree: true });
-
     resetAll();
 
     var button = document.createElement('button');
@@ -93,4 +81,71 @@ document.addEventListener('DOMContentLoaded', function() {
         activateAllLayers();
     });
     document.body.appendChild(button);
+
+    setTimeout(() => {
+        // Busca en todos los objetos globales para encontrar el mapa Leaflet
+        for (let key in window) {
+            if (window.hasOwnProperty(key) && window[key] instanceof L.Map) {
+                window.map = window[key];
+                console.log("Instancia del mapa encontrada:", window.map);
+                break;
+            }
+        }
+
+        if (!window.map) {
+            console.error('No se pudo encontrar la instancia del mapa de Leaflet.');
+        }
+    }, 500); // Tiempo de espera para asegurarse de que el mapa está creado
+
+    let createdPoint = null; // Variable para guardar el punto creado
+
+    // Escuchar mensajes para cuando el ratón esté sobre un punto
+    window.addEventListener('message', function(event) {
+                // Escuchar mensajes cuando el ratón sale de un punto
+        if (event.data === 'mouse_off_point') {
+            console.log('Mouse salió de un punto. Eliminando el punto.');
+    
+            // Eliminar el punto cuando el ratón sale
+            if (createdPoint !== null) {
+                window.map.removeLayer(createdPoint);
+                createdPoint = null; // Reinicia la variable
+            }
+        }
+        if (event.data.type === 'mouse_on_point') {
+            console.log('Mouse sobre el punto: (X:', event.data.x, ', Y:', event.data.y, ')');
+            console.log('Hover data:', event.data.hoverData);
+    
+            var lat = event.data.hoverData[0];
+            var lon = event.data.hoverData[1];
+    
+            console.log("Latitud:", lat);
+            console.log("Longitud:", lon);
+    
+            // Verifica que las coordenadas sean válidas
+            if (lat !== undefined && lon !== undefined && lat !== null && lon !== null) {
+                try {
+                    // Si ya hay un punto creado, elimínalo primero
+                    if (createdPoint !== null) {
+                        window.map.removeLayer(createdPoint);
+                    }
+    
+                    // Crear el punto 2D como un círculo pequeño (sin interactividad)
+                    createdPoint = L.circle([lat, lon], {
+                        radius: 100,         // Radio pequeño para el punto
+                        color: '#00BFFF',  // Color del borde
+                        fillColor: '#00BFFF',  // Color de relleno
+                        fillOpacity: 1,    // Opacidad total
+                        interactive: false // Sin interactividad
+                    }).addTo(window.map);
+                    
+                } catch (error) {
+                    console.error('Error al agregar el punto:', error);
+                }
+            } else {
+                console.error("Latitud o longitud inválidas:", lat, lon);
+            }
+        }
+    
+
+    });
 });

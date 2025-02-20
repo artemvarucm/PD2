@@ -3,6 +3,7 @@ from .routes_velocity import RoutesVelocity
 from .routes_history import RoutesHistory
 import math
 import json
+import pandas as pd
 
 class Airplanes:
     capa_aviones = folium.FeatureGroup(name="Aviones")
@@ -40,11 +41,52 @@ class Airplanes:
 
     @staticmethod
     def generateImageHeights(id_avion):
-        x = np.arange(len(Airplanes.aviones[id_avion]["alturas"]))
-        y = Airplanes.aviones[id_avion]["alturas"]
-        fig = px.line(x=x, y=y, width=600, height=400, markers=True)
+        avion = Airplanes.aviones[id_avion]
+        x = np.arange(len(avion["alturas"]))
+        y = avion["alturas"]
+        rutas=RoutesVelocity.ruta_aviones[id_avion]["rutas"]["ruta_principal"]
+
+
+        latitudes = []
+        longitudes = []
+        alturas_ruta = []
+        aviones_id = []
+
+        # Iteramos sobre los índices de la altura para rellenar los datos de hover
+        for i in range(len(x)):
+            if i < len(rutas):  # Si hay datos de ruta disponibles en ese índice
+                lat, lon, alt, avion_id = rutas[i]
+            else:  # Si no hay datos suficientes en la ruta, asignamos valores por defecto
+                lat, lon, alt, avion_id = None, None, None, None
+            
+            latitudes.append(lat)
+            longitudes.append(lon)
+            alturas_ruta.append(alt)
+            aviones_id.append(avion_id)
+
+        # Convertimos los datos a un DataFrame de Pandas para manejar mejor las columnas
+        df = pd.DataFrame({
+            "Nº Mensaje": x,
+            "Altura": y,
+            "Latitud": latitudes,
+            "Longitud": longitudes,
+            "Altitud Ruta": alturas_ruta,
+            "Avión ID": aviones_id
+        })
+
+        # Crear la gráfica con hover_data correctamente estructurado
+        fig = px.line(
+            df,
+            x="Nº Mensaje",
+            y="Altura",
+            width=600,
+            height=400,
+            markers=True,
+            hover_data={"Latitud": True, "Longitud": True}  # Agregar datos extra al hover
+        )
+
+        # Configuración del layout del gráfico
         fig.update_layout(
-            # margin=dict(l=100, r=100, t=100, b=100),
             title_text="Alturas del avión con el paso del tiempo",
             title_x=0.5,
             yaxis_title="Altura",
@@ -54,9 +96,51 @@ class Airplanes:
             font=dict(size=12, color="black"),
         )
 
+
+
+
         html = fig.to_html(full_html=False, include_plotlyjs="cdn")
 
-        iframe = branca.element.IFrame(html=html, width=620, height=420)
+
+        custom_js = """
+        <script>
+        function setupPlotlyEvents() {
+            var plot = document.querySelector('div.js-plotly-plot'); // Buscar el gráfico
+
+            if (!plot) {
+                console.log("Esperando a que se cargue Plotly...");
+                setTimeout(setupPlotlyEvents, 500); // Reintentar si aún no está listo
+                return;
+            }
+
+            console.log("Gráfico Plotly detectado en el popup!");
+
+            plot.on('plotly_hover', function(event) {
+                if (event.points && event.points.length > 0) {
+                    var pointData = event.points[0];
+                    var msg = {
+                        type: 'mouse_on_point',
+                        x: pointData.x,
+                        y: pointData.y,
+                        hoverData: pointData.customdata  // Extraer latitud y longitud
+                    };
+                    window.parent.postMessage(msg, '*');
+                }
+            });
+
+            plot.on('plotly_unhover', function(event) {
+                window.parent.postMessage('mouse_off_point', '*');
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", setupPlotlyEvents);
+        </script>
+        """
+
+        # Insertar el JS en el HTML del gráfico
+        html_with_js = html + custom_js
+
+        iframe = branca.element.IFrame(html=html_with_js, width=620, height=420)
         popup = folium.Popup(iframe)
         return popup
 
@@ -92,8 +176,8 @@ class Airplanes:
             RoutesHistory.paintRoute(id_avion)
 
         Airplanes.capa_aviones.add_to(mapa)
-        RoutesHistory.capa_rutas.add_to(mapa)
         RoutesVelocity.capa_rutas.add_to(mapa)
+        RoutesHistory.capa_rutas.add_to(mapa)
 
     # GESTIÓN DE LOS AVIONES QUE SE VAN A VISUALIZAR
     @staticmethod
