@@ -10,8 +10,8 @@ app = dash.Dash(__name__)
 
 MAX_HOURS_RANGE = 2 # para evitar problemas de rendimiento
 
-df_static = pd.read_csv("data/ex2/preprocess_mapa_callsign.csv") # cada 5 min, se usa en estático por rendimiento
-df_dynamic = pd.read_csv("data/ex2/preprocess_mapa_callsign_1_min.csv") # cada 30 seg, se usa en dinámico para un vuelo más suave
+df_static = pd.read_csv("data/ex2/preprocess_mapa_5_min.csv") # cada 5 min, se usa en estático por rendimiento
+df_dynamic = pd.read_csv("data/ex2/preprocess_mapa_1_min.csv") # cada 30 seg, se usa en dinámico para un vuelo más suave
 
 # Ordenamos de pasado a futuro (redundante)
 df_static = df_static.sort_values(by='ts_kafka', ascending=True)

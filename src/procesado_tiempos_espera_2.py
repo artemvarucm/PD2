@@ -185,4 +185,4 @@ print("Estadísticas de tiempo de espera (en segundos) por hora de despegue:")
 print(estadisticas_por_dia_hora)
 
 with ProgressBar():
-    eventos_espera.to_csv('eventos_espera_semana_nuevo', index=False)
+    eventos_espera.to_csv('eventos_espera_semana_nuevo.csv', index=False)
