@@ -29,7 +29,7 @@ class DynamicMap():
                 "features": self.geo_features,
             },
             duration="PT1M", # los datos que han estado mostrados durante una hora, se eliminan
-            period="PT2M",
+            period="PT3M",
             auto_play=True,
             add_last_point=False,
         )

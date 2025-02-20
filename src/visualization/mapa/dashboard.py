@@ -86,28 +86,33 @@ app.layout = html.Div([
 ])
 
 @app.callback(
-    [Output("iframe_static_map", "src"), # iframe estatico
-     Output("iframe_dynamic_map", "src"), # iframe dinamico
-     Output("slider-output", "children"), # text con el rango seleccionado 
-     Output("validation", "children") # texto de validacion de rango
-     ],
-    [Input("slider-param", "value")],
+    [Output("slider-output", "children"), Output("validation", "children")],
+    [Input("slider-param", "value")]
 )
-def generate_and_load(value_range):
+def updateTitle(value_range):
     lowerBound = decodeRangeValues[value_range[0]]
     upperBound = decodeRangeValues[value_range[1]]
-    staticSrc = ""
-    dynamicSrc = ""
+
     sliderOutput = f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}"
     validationMsg = ""
 
-    lowerBound_ts = pd.Timestamp(lowerBound).timestamp() * 1000
-    upperBound_ts = pd.Timestamp(upperBound).timestamp() * 1000
-
     if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
         validationMsg = f"El rango de horas no puede superar {MAX_HOURS_RANGE} para simplificar la visualización."
-        return staticSrc, dynamicSrc, sliderOutput, validationMsg
+    
+    return sliderOutput, validationMsg
 
+
+@app.callback(
+    Output("iframe_static_map", "src"),
+    [Input("slider-param", "value")]
+)
+def static_map_draw(value_range):
+    if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
+        return ""
+    lowerBound = decodeRangeValues[value_range[0]]
+    upperBound = decodeRangeValues[value_range[1]]
+    lowerBound_ts = pd.Timestamp(lowerBound).timestamp() * 1000
+    upperBound_ts = pd.Timestamp(upperBound).timestamp() * 1000
     
     # creamos el mapa estatico
     filter_bounds = (df_static['ts_kafka'] >= lowerBound_ts) & (df_static['ts_kafka'] <= upperBound_ts)
@@ -118,6 +123,21 @@ def generate_and_load(value_range):
     stat.saveMap(df_filtered, static_file_path)
     stat.reset()
 
+    return f"/assets/generated_static.html?t={int(time.time())}"
+
+@app.callback(
+    Output("iframe_dynamic_map", "src"),
+    [Input("slider-param", "value")],
+)
+def dynamic_map_draw(value_range):
+    if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
+        return ""
+
+    lowerBound = decodeRangeValues[value_range[0]]
+    upperBound = decodeRangeValues[value_range[1]]
+    lowerBound_ts = pd.Timestamp(lowerBound).timestamp() * 1000
+    upperBound_ts = pd.Timestamp(upperBound).timestamp() * 1000
+
     # para el dinamico usamos otros datos
     dyn = DynamicMap()
     filter_bounds = (df_dynamic['ts_kafka'] >= lowerBound_ts) & (df_dynamic['ts_kafka'] <= upperBound_ts)
@@ -125,11 +145,7 @@ def generate_and_load(value_range):
     dynamic_file_path = "src/visualization/mapa/assets/generated_dynamic.html"
     dyn.saveMap(df_filtered, dynamic_file_path)
 
-    staticSrc = f"/assets/generated_static.html?t={int(time.time())}"
-    dynamicSrc = f"/assets/generated_dynamic.html?t={int(time.time())}"
-
-    return staticSrc, dynamicSrc, sliderOutput, validationMsg
-
+    return f"/assets/generated_dynamic.html?t={int(time.time())}"
 
 @app.callback(
     [Output('iframe_static_map', 'style'), Output('iframe_dynamic_map', 'style')],
