@@ -11,7 +11,7 @@ import plotly.express as px
 import matplotlib
 matplotlib.use('Agg')
 
-df = pd.read_csv('../../../data/ex1/eventos_espera_semana_nuevo.csv')
+df = pd.read_csv('data/ex1/eventos_espera_semana_nuevo.csv')
 
 df['ultimo_parado'] = pd.to_datetime(df['ultimo_parado'])
 df['despegue'] = pd.to_datetime(df['despegue'])
