@@ -18,7 +18,8 @@ class DynamicMap():
         return f"data:image/svg+xml;base64,{base64.b64encode(svg_content.encode()).decode()}"
 
     def fillMap(self, df):
-        df = df[~df.lat.isna() & ~df.lon.isna()]
+        filtro = (~df.lat.isna()) & (~df.lon.isna()) & (~df.ground.isna())
+        df = df[filtro]
         df['ts_kafka'] = pd.to_datetime(df['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%d %H:%M:%S')
         self.fillAirplanes(df)
         self.fillTraces(df)
