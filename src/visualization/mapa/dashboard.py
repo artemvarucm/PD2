@@ -108,22 +108,6 @@ def generate_and_load(value_range):
 
     m = StaticMap()
     print('ADDING AIRPLANES')
-    """
-    # Manual para probar, esto SI va
-    timestamp_str1 = "2025-02-15 14:06:22"
-    timestamp_str2 = "2025-02-15 14:06:25"
-    timestamp_str3 = "2025-02-15 14:06:28"
-    timestamp_str4 = "2025-02-15 20:06:22"
-    timestamp_str5 = "2025-02-15 20:06:24"
-    timestamp_str6 = "2025-02-15 20:06:29"
-
-    m.addAirplane("jnsfu", 40.52, -3.53, True, 0, 10, timestamp_str1, 1)
-    m.addAirplane("jnsfu", 40.55, -3.55, False, 0, 70, timestamp_str2, 2)
-    m.addAirplane("jnsfu", 40.56, -3.56, True, 0, 70, timestamp_str3, 3)
-    m.addAirplane("jnsfu", 40.52, -3.53, True, 0, 90, timestamp_str4, 4)
-    m.addAirplane("jnsfu", 40.70, -3.80, False, 0, 90, timestamp_str5, 3)
-    m.addAirplane("jnsfu", 40.71, -3.82, False, 0, 10, timestamp_str6, 2)
-    """
 
     print('SAVING')
     m.saveMap(df_filtered, file_path)
