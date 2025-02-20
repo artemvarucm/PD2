@@ -11,7 +11,7 @@ import plotly.express as px
 import matplotlib
 matplotlib.use('Agg')
 
-df = pd.read_csv('data/ex1/eventos_espera_semana_nuevo.csv')
+df = pd.read_csv('../../../data/ex1/eventos_espera_semana_nuevo.csv')
 
 df['ultimo_parado'] = pd.to_datetime(df['ultimo_parado'])
 df['despegue'] = pd.to_datetime(df['despegue'])
@@ -19,6 +19,7 @@ df['fecha_despegue'] = pd.to_datetime(df['fecha_despegue'])
 df['hora_despegue'] = df['hora_despegue'].astype(int)
 
 df = df[df["tiempo_espera"] < 1500]
+df = df.dropna(subset=['runway'])
 
 def clean_data(df):
     """Elimina registros duplicados cuando hay un despegue con el mismo ICAO en menos de 5 minutos."""
@@ -376,4 +377,4 @@ def update_graph(selected_value):
 
 # Corre la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
