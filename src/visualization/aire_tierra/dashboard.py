@@ -172,21 +172,32 @@ def update_graph_2(dia_1, dia_2):
 )
 def update_bar_chart(dia):
     df_day = df.groupby(['day', 'OnGround']).size().reset_index(name='count')
-    df_day["OnGround"] = df_day["OnGround"].replace({1: "En Tierra", 0: "En Aire"})
-    df_day = df_day.sort_values(by="count", ascending=False)
 
-    # Crear gráfico de barras con Plotly
-    fig = px.bar(df_day, x="day", y="count", color="OnGround", barmode="stack")
+    df_day["OnGround"] = df_day["OnGround"].replace({1: "En Tierra", 0: "En Aire"})
+
+    df_day["dia_semana"] = df_day["day"].apply(get_day_of_week)
+
+    dias_ordenados = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+    df_day["dia_semana"] = pd.Categorical(df_day["dia_semana"], categories=dias_ordenados, ordered=True)
+    df_day = df_day.sort_values("dia_semana")
+
+    fig = px.bar(df_day, x="dia_semana", y="count", color="OnGround", barmode="stack")
 
     fig.update_layout(
         xaxis_title="Día de la semana",
         yaxis_title="Cantidad de Aviones",
         title=dict(
-            text="Tráfico Aéreo por Día de la Semana",
+            text="Tráfico Aéreo por día de la semana",
             x=0.5,
-        )
+            font=dict(
+                family="Arial Black, sans-serif",
+                size=18,
+                color="black"
+            )
+        ),
+        template="plotly_white"
     )
-
     return fig
 
 # Callback para actualizar el gráfico de la matriz de calor (Heatmap)
