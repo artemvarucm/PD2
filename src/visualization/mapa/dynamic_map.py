@@ -6,8 +6,8 @@ import re
 import math
 
 class DynamicMap():
-    def __init__(self, zoom = 6):
-        self.map = folium.Map(location=[40.51, -3.53], zoom_start=zoom)
+    def __init__(self, latitud=40.51, longitud=-3.53):
+        self.map = folium.Map(location=[latitud, longitud], zoom_start=6)
         self.geo_features = []
 
     def getIcon(self, onGround, svg_air_data, svg_ground_data, angle):
@@ -28,8 +28,8 @@ class DynamicMap():
                 "type": "FeatureCollection",
                 "features": self.geo_features,
             },
-            duration="PT30S", # los datos que han estado mostrados durante una hora, se eliminan
-            period="PT1M",
+            duration="PT1M", # los datos que han estado mostrados durante una hora, se eliminan
+            period="PT2M",
             auto_play=True,
             add_last_point=False,
         )
@@ -73,12 +73,12 @@ class DynamicMap():
                             "iconSize": [20, 20],
                         },
                         'popup': f"""
-                            ICAO24: {id}<dd> \
+                            <b>ID: {id}</b><dd><dd> \
                             Callsign: {df_current['callsign'].values.tolist()[time]}<dd> \
-                            Timestamp: {df_current['ts_kafka'].values.tolist()[time]}<dd> \
+                            Lat: {float(f'{df_current['lat'].values.tolist()[time]:.8g}')}<dd> \
+                            Lon: {float(f'{df_current['lon'].values.tolist()[time]:.8g}')}<dd> \
                             Velocidad: {float(f'{float(df_current['velocity'].values.tolist()[time]):.5g}')} nudos<dd> \
-                            Longitud: {float(f'{df_current['lon'].values.tolist()[time]:.8g}')}<dd> \
-                            Latitud: {float(f'{df_current['lat'].values.tolist()[time]:.8g}')}"
+                            Timestamp: {df_current['ts_kafka'].values.tolist()[time]}<dd> \
                             """,
                         'name': '',
                         'style': {'color': 'black', 'weight': 2},
@@ -92,11 +92,6 @@ class DynamicMap():
                         }
                 })
     
-    def saveMap(self, path):
+    def saveMap(self, df, path):
+        self.fillMap(df)
         self.map.save(path)
-
-
-dyn = DynamicMap()
-df = pd.read_csv("data/ex2/preprocess_mapa_callsign_30_sec.csv")
-dyn.fillMap(df)
-dyn.saveMap('mapa_dinamico.html')
