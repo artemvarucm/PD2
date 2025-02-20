@@ -51,7 +51,7 @@ df = df.groupby(["day","hour","ICAO"])["OnGround"].unique().explode().reset_inde
 
 
 with ProgressBar():
-    df.to_csv('data/ex1/parte1.csv', index=False) 
+    df.to_csv('data/ex1/datos_aire_tierra.csv', index=False) 
 
 
     

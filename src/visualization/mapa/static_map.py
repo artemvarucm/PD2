@@ -16,7 +16,7 @@ class StaticMap:
     def createMap(self, latitud=40.51, longitud=-3.53):
         """Crea un mapa. Al abrirse hace zoom en la localizacion indicada"""
         mapa = folium.Map(
-            location=[latitud, longitud], zoom_start=12, zoom_control=False
+            location=[latitud, longitud], zoom_start=6, zoom_control=False
         )
         return mapa
 
@@ -57,7 +57,7 @@ class StaticMap:
         data['ts_kafka'] = pd.to_datetime(data['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%d %H:%M:%S')
         for _, row in data.iterrows():
             if pd.notna(row["ground"]) and pd.notna(row["lat"]) and pd.notna(row["lon"]) and  row["ground"] is not None and row["lat"] is not None and row["lon"] is not None: #on ground
-                print(f"ICAO -- {row["icao"]} , LAT -- {row["lat"]}, LON -- {row["lon"]}, VELOCITY -- {row["velocity"]}, DIRECCION -- {row["direccion"]}")
+                #print(f"ICAO -- {row["icao"]} , LAT -- {row["lat"]}, LON -- {row["lon"]}, VELOCITY -- {row["velocity"]}, DIRECCION -- {row["direccion"]}")
                 self.addAirplane(row["icao"], row["lat"],row["lon"],row["ground"], row["direccion"], row["velocity"], row["ts_kafka"], row["alt_feet"], row['callsign'])
 
     def deleteAirplane(self, id_avion):
@@ -99,31 +99,3 @@ class StaticMap:
         """Borra las capas que varían con el tiempo (aviones y rutas)"""
         self.mapa = self.createMap()
         self.initializeMap(all=False)
-
-"""
-m = StaticMap()
-
-timestamp_str1 = "2025-02-15 14:06:22"
-timestamp_str2 = "2025-02-15 14:06:25"
-timestamp_str3 = "2025-02-15 14:06:28"
-timestamp_str4 = "2025-02-15 20:06:22"
-timestamp_str5 = "2025-02-15 20:06:24"
-timestamp_str6 = "2025-02-15 20:06:29"
-
-m.addAirplane("jnsfu", 40.52, -3.53, True, 0, 10, timestamp_str1, 1)
-m.addAirplane("jnsfu", 40.55, -3.55, False, 0, 70, timestamp_str2, 2)
-m.addAirplane("jnsfu", 40.56, -3.56, True, 0, 70, timestamp_str3, 3)
-m.addAirplane("jnsfu", 40.52, -3.53, True, 0, 90, timestamp_str4, 4)
-m.addAirplane("jnsfu", 40.70, -3.80, False, 0, 90, timestamp_str5, 3)
-m.addAirplane("jnsfu", 40.71, -3.82, False, 0, 10, timestamp_str6, 2)
-
-m = StaticMap()
-
-df = pd.read_csv("data/ex2/preprocess_mapa_callsign.csv")
-print(df.icao.unique())
-df = df[df['icao'] == '780d8f']
-
-m.showMap(df)
-"""
-
-

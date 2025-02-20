@@ -13,7 +13,7 @@ from datetime import datetime
 locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
 
 # Cargar el dataset
-df = pd.read_csv("../../../data/ex1/parte1.csv")
+df = pd.read_csv("../../../data/ex1/datos_aire_tierra.csv")
 
 # Estilo externo para la aplicación
 external_stylesheets = ['styles.css']

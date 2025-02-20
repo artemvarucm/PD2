@@ -137,7 +137,7 @@ rwy_polygon_14R_32L = Polygon([
 
 
 
-df = dd.read_csv("E:/UniversidadCoding/Tercero/PD2/PD2/src/datos_semana/0.part", sep=",", parse_dates=["timestamp"])  # o el patrón que hayas definido
+df = dd.read_csv("datos_semana", sep=",", parse_dates=["timestamp"])  # o el patrón que hayas definido
 df["surface_velocity"] = df.apply(
     compute_surface_velocity, axis=1, meta=("surface_velocity", float)
 )
@@ -185,4 +185,4 @@ print("Estadísticas de tiempo de espera (en segundos) por hora de despegue:")
 print(estadisticas_por_dia_hora)
 
 with ProgressBar():
-    eventos_espera.to_csv('eventos_espera_semana_nuevo', index=False)
+    eventos_espera.to_csv('eventos_espera_semana_nuevo.csv', index=False)

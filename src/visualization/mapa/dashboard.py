@@ -4,43 +4,28 @@ from dash.dependencies import Input, Output
 import time
 import pandas as pd
 from static_map import StaticMap
+from dynamic_map import DynamicMap
 
 app = dash.Dash(__name__)
 
-MAX_HOURS_RANGE = 5 # para evitar problemas de rendimiento
+MAX_HOURS_RANGE = 2 # para evitar problemas de rendimiento
 
-# Eliminamos filas sin latitud, longitud y ground
-df = pd.read_csv("data/ex2/preprocess_mapa_callsign.csv")
-df = df.dropna(subset=['lat', 'lon', 'ground'])
-df = df[(df.lat != None) & (df.lon != None) & (df.ground != None)]
-# Ordenamos de pasado a futuro
-df = df.sort_values(by='ts_kafka', ascending=True)
+df_static = pd.read_csv("data/ex2/preprocess_mapa_5_min.csv") # cada 5 min, se usa en estático por rendimiento
+df_dynamic = pd.read_csv("data/ex2/preprocess_mapa_1_min.csv") # cada 30 seg, se usa en dinámico para un vuelo más suave
 
-df['date'] = pd.to_datetime(df['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%d')
-df['datetime'] = pd.to_datetime(df['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%d %H:%M:%S')
+# Ordenamos de pasado a futuro (redundante)
+df_static = df_static.sort_values(by='ts_kafka', ascending=True)
+df_dynamic = df_dynamic.sort_values(by='ts_kafka', ascending=True)
 
 # Para seleccionar el rango de fechas (desde 00:00 fecha min a fecha max 23:00)
-date_range = pd.date_range(start=df.iloc[0]['date'], end=str(df.iloc[-1]['date']) + " 23:00", freq="h")
+df_static['date'] = pd.to_datetime(df_static['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%d')
+date_range = pd.date_range(start=df_static.iloc[0]['date'], end=str(df_static.iloc[-1]['date']) + " 23:00", freq="h")
 decodeRangeValues = {i: date for i, date in enumerate(date_range)}
 
 app.layout = html.Div([
     html.H3(
         id="title-dynamic",
-        children="ANIMACIÓN DEL MAPA",
-        style={
-            'display': 'flex', 
-            'justify-content': 'center', 
-            'align-items': 'center',
-        }
-    ),
-    html.Iframe(
-        id="iframe_dyn_map",
-        src="/assets/mapa_dinamico.html",
-        style={"width": "100%", "height": "400px"}
-    ),
-    html.H3(
-        id="title-dynamic",
-        children=f"FILTRAR MOMENTOS DEL MAPA (RANGO MÁXIMO {MAX_HOURS_RANGE} HORAS)",
+        children=f"FILTRADO POR TIEMPO (RANGO MÁXIMO {MAX_HOURS_RANGE} HORAS)",
         style={
             'display': 'flex', 
             'justify-content': 'center', 
@@ -74,63 +59,104 @@ app.layout = html.Div([
         id="validation",
         style={'color': 'red'}
     ),
+    dcc.RadioItems(
+        id='toggle-map-type',
+        options=[
+            {'label': 'ANIMADO', 'value': 'dynamic'},
+            {'label': 'ESTÁTICO', 'value': 'static'}
+        ],
+        style={
+            'display': 'flex', 
+            'justify-content': 'center', 
+            'align-items': 'center',
+        },
+        value='dynamic',
+        inline=True
+    ),
+    html.Iframe(
+        id="iframe_dynamic_map",
+        style={'width': '100%', 'height': '600px'}
+    ),
     html.Br(),
     html.Iframe(
-        id="iframe_map",
-        #src="/assets/intro.html",  # Default page
-        style={"width": "100%", "height": "700px"}
+        id="iframe_static_map",
+        style={'width': '100%', 'height': '600px', 'display': 'none'}
     ),
+    html.Img(src="/assets/leyenda.png", style={"width": "30%", "display": "block", "margin": "auto"})
 ])
 
-# Callback to generate and update the map
 @app.callback(
-    [Output("iframe_map", "src"), Output("slider-output", "children"), Output("validation", "children")],
-    [Input("slider-param", "value")],
-    #prevent_initial_call=True
+    [Output("slider-output", "children"), Output("validation", "children")],
+    [Input("slider-param", "value")]
 )
-def generate_and_load(value_range):
+def updateTitle(value_range):
     lowerBound = decodeRangeValues[value_range[0]]
     upperBound = decodeRangeValues[value_range[1]]
 
+    sliderOutput = f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}"
+    validationMsg = ""
+
+    if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
+        validationMsg = f"El rango de horas no puede superar {MAX_HOURS_RANGE} para simplificar la visualización."
+    
+    return sliderOutput, validationMsg
+
+
+@app.callback(
+    Output("iframe_static_map", "src"),
+    [Input("slider-param", "value")]
+)
+def static_map_draw(value_range):
+    if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
+        return ""
+    lowerBound = decodeRangeValues[value_range[0]]
+    upperBound = decodeRangeValues[value_range[1]]
+    lowerBound_ts = pd.Timestamp(lowerBound).timestamp() * 1000
+    upperBound_ts = pd.Timestamp(upperBound).timestamp() * 1000
+    
+    # creamos el mapa estatico
+    filter_bounds = (df_static['ts_kafka'] >= lowerBound_ts) & (df_static['ts_kafka'] <= upperBound_ts)
+    df_filtered = df_static[filter_bounds]
+
+    stat = StaticMap()
+    static_file_path = "src/visualization/mapa/assets/generated_static.html"
+    stat.saveMap(df_filtered, static_file_path)
+    stat.reset()
+
+    return f"/assets/generated_static.html?t={int(time.time())}"
+
+@app.callback(
+    Output("iframe_dynamic_map", "src"),
+    [Input("slider-param", "value")],
+)
+def dynamic_map_draw(value_range):
+    if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
+        return ""
+
+    lowerBound = decodeRangeValues[value_range[0]]
+    upperBound = decodeRangeValues[value_range[1]]
     lowerBound_ts = pd.Timestamp(lowerBound).timestamp() * 1000
     upperBound_ts = pd.Timestamp(upperBound).timestamp() * 1000
 
-    if (value_range[1] - value_range[0] > MAX_HOURS_RANGE):
-        return f"", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}", f"El rango de horas no puede superar {MAX_HOURS_RANGE} para simplificar la visualización."
+    # para el dinamico usamos otros datos
+    dyn = DynamicMap()
+    filter_bounds = (df_dynamic['ts_kafka'] >= lowerBound_ts) & (df_dynamic['ts_kafka'] <= upperBound_ts)
+    df_filtered = df_dynamic[filter_bounds]
+    dynamic_file_path = "src/visualization/mapa/assets/generated_dynamic.html"
+    dyn.saveMap(df_filtered, dynamic_file_path)
 
-    # Filtramos dataframe
-    print('FILTERING')
-    filter_bounds = (df['ts_kafka'] >= lowerBound_ts) & (df['ts_kafka'] <= upperBound_ts)
-    df_filtered = df[filter_bounds]
-    print(f'FILTERED {filter_bounds.sum()} ROWS')
-    # Creamos el mapa
-    file_path = "src/visualization/mapa/assets/generated.html"
+    return f"/assets/generated_dynamic.html?t={int(time.time())}"
 
-    m = StaticMap()
-    print('ADDING AIRPLANES')
-    """
-    # Manual para probar, esto SI va
-    timestamp_str1 = "2025-02-15 14:06:22"
-    timestamp_str2 = "2025-02-15 14:06:25"
-    timestamp_str3 = "2025-02-15 14:06:28"
-    timestamp_str4 = "2025-02-15 20:06:22"
-    timestamp_str5 = "2025-02-15 20:06:24"
-    timestamp_str6 = "2025-02-15 20:06:29"
+@app.callback(
+    [Output('iframe_static_map', 'style'), Output('iframe_dynamic_map', 'style')],
+    Input('toggle-map-type', 'value')
+)
+def toggle_iframes(selected_value):
+    if selected_value == 'static':
+        return {'width': '100%', 'height': '500px'}, {'width': '100%', 'height': '500px', 'display': 'none'}
+    else:
+        return {'width': '100%', 'height': '500px', 'display': 'none'}, {'width': '100%', 'height': '500px'}
 
-    m.addAirplane("jnsfu", 40.52, -3.53, True, 0, 10, timestamp_str1, 1)
-    m.addAirplane("jnsfu", 40.55, -3.55, False, 0, 70, timestamp_str2, 2)
-    m.addAirplane("jnsfu", 40.56, -3.56, True, 0, 70, timestamp_str3, 3)
-    m.addAirplane("jnsfu", 40.52, -3.53, True, 0, 90, timestamp_str4, 4)
-    m.addAirplane("jnsfu", 40.70, -3.80, False, 0, 90, timestamp_str5, 3)
-    m.addAirplane("jnsfu", 40.71, -3.82, False, 0, 10, timestamp_str6, 2)
-    """
-
-    print('SAVING')
-    m.saveMap(df_filtered, file_path)
-    m.reset()
-    print('FINISHED')
-    # Append timestamp to force browser to load fresh file
-    return f"/assets/generated.html?t={int(time.time())}", f"MAPA DE VUELOS DESDE {lowerBound} HASTA {upperBound}", ""
 
 if __name__ == "__main__":
     app.run_server(debug=False)
