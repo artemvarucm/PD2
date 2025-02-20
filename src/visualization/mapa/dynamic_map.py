@@ -2,73 +2,95 @@ import folium
 import folium.plugins
 import pandas as pd
 import base64
-from layers.airplanes import RoutesVelocity
+import re
+import math
 
 class DynamicMap():
     def __init__(self, zoom = 6):
         self.map = folium.Map(location=[40.51, -3.53], zoom_start=zoom)
+        self.geo_features = []
 
-    def getIcon(self, onGround, svg_air_data, svg_ground_data):
+    def getIcon(self, onGround, svg_air_data, svg_ground_data, angle):
         svg_data = svg_ground_data if onGround else svg_air_data
-        return f"data:image/svg+xml;base64,{base64.b64encode(svg_data.encode()).decode()}"
+        svg_content = re.sub(r'(<svg[^>]*>)', r'\1\n  <g transform="rotate({} {} {})">'.format(angle * 180 / math.pi, 288, 256), svg_data)        
+        svg_content = re.sub(r'(</svg>)', r'  </g>\n\1', svg_content)
+        
+        return f"data:image/svg+xml;base64,{base64.b64encode(svg_content.encode()).decode()}"
 
     def fillMap(self, df):
         df = df[~df.lat.isna() & ~df.lon.isna()]
-        df['ts_kafka'] = pd.to_datetime(df['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%dT%H:%M:%S')
+        df['ts_kafka'] = pd.to_datetime(df['ts_kafka'], unit='ms').dt.strftime('%Y-%m-%d %H:%M:%S')
+        self.fillAirplanes(df)
+        self.fillTraces(df)
 
-        # Lon, Lat order.
-        lines = [
+        t = folium.plugins.TimestampedGeoJson(
             {
-                "coordinates": df[df.icao == icao][['lon', 'lat']].values.tolist(),
-                "dates": df[df.icao == icao]['ts_kafka'].values.tolist(),
-                "color": df[df.icao == icao].velocity.map(lambda x: RoutesVelocity.get_color_by_speed(x) if x is not None else "green").values.tolist(),
-                "popup": f"Avión: {icao}"
-            }
+                "type": "FeatureCollection",
+                "features": self.geo_features,
+            },
+            duration="PT30S", # los datos que han estado mostrados durante una hora, se eliminan
+            period="PT1M",
+            auto_play=True,
+            add_last_point=False,
+        )
+        t.add_to(self.map)
+    
+    def fillTraces(self, df):   
+        trail_Size = 10
+        for id in df.icao.unique():
+            for time_index, time in enumerate(df[df.icao == id]['ts_kafka'].values.tolist()):
+                points=df[df.icao == id][['lon', 'lat']].values.tolist()[:time_index+1][-trail_Size:]
+                self.geo_features.append({
+                    'type': "Feature",
+                    'properties':{
+                        'name': '',
+                        'style': {'color': 'black', 'weight': 2},
+                        'times': [time]*len(points)},
 
-            for icao in df.icao.unique()
-        ]
+                    'geometry':{
+                        'type': "LineString",
+                        'coordinates': points
+                    }
+                })
 
+    def fillAirplanes(self, df):
         with open("./assets/icons/airplane_air.svg", "r") as file:
             svg_air_data = file.read()
 
         with open("./assets/icons/airplane_ground.svg", "r") as file:
             svg_ground_data = file.read()
 
-        features = [
-            {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": line["coordinates"],
-                },
-                "properties": {
-                    "times": line["dates"],
-                    "icon": "marker",
-                    "iconstyle": {
-                        "iconUrl": self.getIcon(False, svg_air_data, svg_ground_data),
-                        "iconSize": [20, 20],
-                    },
-                    "popup": line["popup"],
-                    #"style": {
-                    #    "color": line["color"], # aqui podemos meter el color (velocidad)
-                    #    "weight": 2,
-                    #},
-                },
-            }
-            for line in lines
-        ]
+        for id in df.icao.unique():
+            df_current = df[df.icao == id]
+            for time in range((df.icao == id).sum()):
 
-        t = folium.plugins.TimestampedGeoJson(
-            {
-                "type": "FeatureCollection",
-                "features": features,
-            },
-            duration="PT1H", # los datos que han estado mostrados durante una hora, se eliminan
-            period="PT1M",
-            auto_play=True,
-            add_last_point=True,
-        )
-        t.add_to(self.map)
+                self.geo_features.append({
+                    'type': "Feature",
+                    'properties': {
+                        'icon': 'marker',
+                        "iconstyle": {
+                            "iconUrl": self.getIcon(df_current['ground'].values.tolist()[time], svg_air_data, svg_ground_data, df_current['direccion'].values.tolist()[time]),
+                            "iconSize": [20, 20],
+                        },
+                        'popup': f"""
+                            ICAO24: {id}<dd> \
+                            Callsign: {df_current['callsign'].values.tolist()[time]}<dd> \
+                            Timestamp: {df_current['ts_kafka'].values.tolist()[time]}<dd> \
+                            Velocidad: {float(f'{float(df_current['velocity'].values.tolist()[time]):.5g}')} nudos<dd> \
+                            Longitud: {float(f'{df_current['lon'].values.tolist()[time]:.8g}')}<dd> \
+                            Latitud: {float(f'{df_current['lat'].values.tolist()[time]:.8g}')}"
+                            """,
+                        'name': '',
+                        'style': {'color': 'black', 'weight': 2},
+                        'times': [df_current['ts_kafka'].values.tolist()[time]]
+                        },
+
+                    'geometry':{
+                        'type': "MultiPoint",
+                        # Lon, Lat order.
+                        'coordinates': [df_current[['lon', 'lat']].values.tolist()[time]]
+                        }
+                })
     
     def saveMap(self, path):
         self.map.save(path)
