@@ -51,7 +51,7 @@ vortexDictionary = {
 
 
 def getCA(hex):
-    return pms.bin2int(pms.hex2bin(hex)[5:8])
+    return pms.decoder.adsb.category(hex)
 
 def getAircraftType(hex):
     tc = getTypeCode(hex)
