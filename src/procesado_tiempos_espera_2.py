@@ -3,12 +3,46 @@ import pandas as pd
 import time
 import pyModeS as pms
 import base64
+
+from pyproj import Transformer
 from shapely.geometry import Point, Polygon
 
 from dask.array import result_type
 from dask.diagnostics import ProgressBar
+import geopandas as gpd  # para leer el geojson
 
+# ============================
+# 1. Cargar y preparar Holding Points con Buffer
+# ============================
+# Cargar el geojson de holding points (en CRS WGS84)
+holding_points = gpd.read_file("../data/geojson/holding_points.geojson")
 
+# Reproyectar a un CRS métrico (por ejemplo, UTM 30N; usa el EPSG adecuado para tu zona)
+holding_points_utm = holding_points.to_crs(epsg=32630)
+
+# Crear un buffer de 50 metros alrededor de cada holding point
+holding_points_utm['buffer'] = holding_points_utm.buffer(50)
+
+# Crear un transformer para convertir puntos de WGS84 (EPSG:4326) a UTM (EPSG:32630)
+transformer = Transformer.from_crs("EPSG:4326", "EPSG:32630", always_xy=True)
+
+def transform_point(point):
+    """Transforma un punto de WGS84 a UTM."""
+    x, y = transformer.transform(point.x, point.y)
+    return Point(x, y)
+
+def find_holding_point_with_buffer(lon, lat):
+    """
+    Dado un par de coordenadas (en WGS84), transforma el punto a UTM y verifica
+    si se encuentra dentro de alguno de los buffers de los holding points.
+    Devuelve el DESIGNATOR (u otro identificador) si coincide o None.
+    """
+    point = Point(lon, lat)
+    point_utm = transform_point(point)
+    for idx, row in holding_points_utm.iterrows():
+        if row['buffer'].contains(point_utm):
+            return row.get("DESIGNATOR", f"holding_point_{idx}")
+    return None
 
 def getSurfaceVelocity(hex_str):
     binary_message = pms.hex2bin(hex_str)
@@ -81,6 +115,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     """
     grupo = grupo.sort_values("timestamp")
     eventos = []
+    ultimo_holding_point = None
     ultimo_parado = None
     aircraftType = None
     ultimaLat = None
@@ -94,7 +129,10 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                 aircraftType = row["AircraftType"]
 
         if pd.notna(row.get("surface_velocity")) and row["surface_velocity"] == 0:
-            ultimo_parado = row["timestamp"]
+            hp = find_holding_point(row["lon"], row["lat"])
+            if hp is not None:
+                ultimo_parado = row["timestamp"]
+                ultimo_holding_point = hp
 
         if(pd.notna(row.get("lat")) and pd.notna(row.get("lon"))):
             ultimaLat = row["lat"]
@@ -113,10 +151,22 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     "aircraft_type": aircraftType,
                     "lat": ultimaLat,
                     "lon": ultimaLon,
+                    "holding_point": ultimo_holding_point,
                 })
                 # Reiniciamos la marca para detectar el siguiente vuelo
                 ultimo_parado = None
     return pd.DataFrame(eventos)
+
+# Nueva función para detectar el holding point.
+def find_holding_point(lon, lat):
+    point = Point(lon, lat)
+    # Se recorre cada holding point del GeoJSON
+    for idx, row in holding_points.iterrows():
+        # Se asume que la geometría está en la columna 'geometry'
+        if row['geometry'].contains(point):
+            # Se devuelve, por ejemplo, el nombre (o cualquier identificador que tenga el geojson)
+            return row.get('name', f"holding_point_{idx}")
+    return None
 
 
 rwy_polygon_18R_36L = Polygon([
@@ -162,7 +212,8 @@ meta = {
     "tiempo_espera": float,
     "aircraft_type": str,
     "lat": "float64",
-    "lon": "float64"
+    "lon": "float64",
+    "holding_point": str,
 }
 
 with ProgressBar():

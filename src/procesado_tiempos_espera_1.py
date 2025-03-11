@@ -51,7 +51,15 @@ vortexDictionary = {
 
 
 def getCA(hex):
-    return pms.decoder.adsb.category(hex)
+    tc = getTypeCode(hex)
+    # Asegurar que tc no es None antes de comparar
+    if tc is None or not (1 <= tc <= 4):
+        return None
+    try:
+        return pms.decoder.adsb.category(hex)
+    except Exception:
+        return None
+
 
 def getAircraftType(hex):
     tc = getTypeCode(hex)
@@ -63,7 +71,7 @@ def getAircraftType(hex):
 
 
 i = time.time()
-df = dd.read_csv("E:/UniversidadCoding/Tercero/PD2/datos/semana/datosSemana.csv", sep=";")
+df = dd.read_csv("archivo_dividido_1.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
 df["DL"] = df["messageHex"].apply(getDownlink, meta=int)
@@ -76,13 +84,13 @@ df = df[filtroDL & filtroCorrupto].reset_index()
 
 
 df["ICAO"] = df["messageHex"].apply(getICAO, meta=str)
-df["CA"] = df["messageHex"].apply(getCA, meta=int)
 df["OnGround"] = df["messageHex"].apply(getOnGround, meta=int)
 df["AircraftType"] = df["messageHex"].apply(getAircraftType, meta='str')
 df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
 df["fecha"] = df["timestamp"].dt.date
 df["hora"] = df["timestamp"].dt.hour
 df["TC"] = df["messageHex"].apply(getTypeCode, meta=int)
+df["CA"] = df["messageHex"].apply(getCA, meta=int)
 df = df.repartition(npartitions=1)
 with ProgressBar():
     df.to_csv('datos_semana', index=False, single_file=True)
