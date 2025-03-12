@@ -129,7 +129,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                 aircraftType = row["AircraftType"]
 
         if pd.notna(row.get("surface_velocity")) and row["surface_velocity"] == 0:
-            hp = find_holding_point(row["lon"], row["lat"])
+            hp = find_holding_point_with_buffer(row["lon"], row["lat"])
             if hp is not None:
                 ultimo_parado = row["timestamp"]
                 ultimo_holding_point = hp
@@ -158,6 +158,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(eventos)
 
 # Nueva función para detectar el holding point.
+"""
 def find_holding_point(lon, lat):
     point = Point(lon, lat)
     # Se recorre cada holding point del GeoJSON
@@ -167,7 +168,7 @@ def find_holding_point(lon, lat):
             # Se devuelve, por ejemplo, el nombre (o cualquier identificador que tenga el geojson)
             return row.get('name', f"holding_point_{idx}")
     return None
-
+"""
 
 rwy_polygon_18R_36L = Polygon([
     (-3.582, 40.492383), (-3.5695, 40.492383), (-3.5695, 40.537929), (-3.582, 40.537929)
@@ -187,7 +188,7 @@ rwy_polygon_14R_32L = Polygon([
 
 
 
-df = dd.read_csv("datos_semana", sep=",", parse_dates=["timestamp"])  # o el patrón que hayas definido
+df = dd.read_csv("datos_semana", sep=",", parse_dates=["timestamp"], dtype={'AircraftType': 'object'})  # o el patrón que hayas definido
 df["surface_velocity"] = df.apply(
     compute_surface_velocity, axis=1, meta=("surface_velocity", float)
 )
