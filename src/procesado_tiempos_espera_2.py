@@ -15,7 +15,7 @@ import geopandas as gpd  # para leer el geojson
 # 1. Cargar y preparar Holding Points con Buffer
 # ============================
 # Cargar el geojson de holding points (en CRS WGS84)
-holding_points = gpd.read_file("../data/geojson/holding_points.geojson")
+holding_points = gpd.read_file("data/geojson/holding_points.geojson")
 
 # Reproyectar a un CRS métrico (por ejemplo, UTM 30N; usa el EPSG adecuado para tu zona)
 holding_points_utm = holding_points.to_crs(epsg=32630)
