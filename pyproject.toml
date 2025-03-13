@@ -22,4 +22,6 @@ dependencies = [
     "google-genai>=1.4.0",
     "pyproj>=3.7.1",
     "geopandas>=1.0.1",
+    "requests>=2.32.3",
+    "beautifulsoup4>=4.12.3",
 ]

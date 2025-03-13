@@ -10,6 +10,7 @@ name = "1090-riddle"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "dash" },
     { name = "dask" },
     { name = "folium" },
@@ -25,12 +26,14 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pymodes" },
     { name = "pyproj" },
+    { name = "requests" },
     { name = "seaborn" },
     { name = "shapely" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.12.3" },
     { name = "dash", specifier = ">=2.18.2" },
     { name = "dask", specifier = ">=2025.1.0" },
     { name = "folium", specifier = ">=0.19.4" },
@@ -46,6 +49,7 @@ requires-dist = [
     { name = "pyarrow", specifier = "==17.0.0" },
     { name = "pymodes", specifier = ">=2.19" },
     { name = "pyproj", specifier = ">=3.7.1" },
+    { name = "requests", specifier = ">=2.32.3" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "shapely", specifier = ">=2.0.7" },
 ]
@@ -305,7 +309,7 @@ name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593 }
 wheels = [
@@ -699,7 +703,7 @@ name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "platform_system == 'Darwin'" },
+    { name = "appnope", marker = "sys_platform == 'darwin'" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython" },
