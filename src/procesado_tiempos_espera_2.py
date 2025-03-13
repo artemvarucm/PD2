@@ -15,7 +15,7 @@ import geopandas as gpd  # para leer el geojson
 # 1. Cargar y preparar Holding Points con Buffer
 # ============================
 # Cargar el geojson de holding points (en CRS WGS84)
-holding_points = gpd.read_file("data/geojson/holding_points.geojson")
+holding_points = gpd.read_file("../data/geojson/holding_points.geojson")
 
 # Reproyectar a un CRS métrico (por ejemplo, UTM 30N; usa el EPSG adecuado para tu zona)
 holding_points_utm = holding_points.to_crs(epsg=32630)
@@ -114,47 +114,68 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     Se reinicia la marca de tierra para detectar ciclos sucesivos.
     """
     grupo = grupo.sort_values("timestamp")
+
     eventos = []
-    ultimo_holding_point = None
-    ultimo_parado = None
+    eventos_provisional = []
+    visited_hp = set()
+
+    # Variables para seguimiento de estado
+    primer_parado = None
+    ultimaLat, ultimaLon = None, None
     aircraftType = None
-    ultimaLat = None
-    ultimaLon = None
 
     for _, row in grupo.iterrows():
         # Si el mensaje es de superficie y se puede decodificar la velocidad,
         # y esta es exactamente 0, se considera que el avión está parado.
-        if ((row["TC"] > 0) & (row["TC"] < 5)):
+        if ((aircraftType is None) & (row["TC"] > 0) & (row["TC"] < 5)):
             if ((row["AircraftType"] not in ["No category information", "Reserved", "ERROR"]) | (row["TC"] != 1)):
                 aircraftType = row["AircraftType"]
 
+
         if pd.notna(row.get("surface_velocity")) and row["surface_velocity"] == 0:
             hp = find_holding_point_with_buffer(row["lon"], row["lat"])
-            if hp is not None:
-                ultimo_parado = row["timestamp"]
-                ultimo_holding_point = hp
+            if ((hp is not None) & (hp not in visited_hp)):
+                visited_hp.add(hp)
+                primer_parado = row["timestamp"]
 
-        if(pd.notna(row.get("lat")) and pd.notna(row.get("lon"))):
+                eventos_provisional.append({
+                    "ICAO": row["ICAO"],
+                    "primer_parado": primer_parado,
+                    "despegue": None,
+                    "tiempo_espera": None,
+                    "aircraft_type": aircraftType,
+                    "lat": None,
+                    "lon": None,
+                    "holding_point": hp,
+                })
+
+        if (pd.notna(row.get("lat")) and pd.notna(row.get("lon"))):
             ultimaLat = row["lat"]
             ultimaLon = row["lon"]
 
+
         # Cuando se detecta que el avión ya está en aire (OnGround == 0)
         if ((row["OnGround"] == 0) & (row["DL"] == 11)):
-            if ultimo_parado is not None:
+            if primer_parado is not None:
                 tiempo_despegue = row["timestamp"]
-                tiempo_espera = (tiempo_despegue - ultimo_parado).total_seconds()
-                eventos.append({
-                    "ICAO": row["ICAO"],
-                    "ultimo_parado": ultimo_parado,
-                    "despegue": tiempo_despegue,
-                    "tiempo_espera": tiempo_espera,
-                    "aircraft_type": aircraftType,
-                    "lat": ultimaLat,
-                    "lon": ultimaLon,
-                    "holding_point": ultimo_holding_point,
-                })
-                # Reiniciamos la marca para detectar el siguiente vuelo
-                ultimo_parado = None
+
+                # Filtrar eventos provisionales del mismo avión
+                eventos_asociados = [e for e in eventos_provisional if e["ICAO"] == row["ICAO"]]
+
+                for evento in eventos_asociados:
+                    evento["despegue"] = tiempo_despegue
+                    evento["tiempo_espera"] = (tiempo_despegue - evento["primer_parado"]).total_seconds()
+                    evento["lat"] = ultimaLat
+                    evento["lon"] = ultimaLon
+
+                    eventos.append(evento)
+
+                ultimaLat, ultimaLon = None, None
+                primer_parado = None
+                aircraftType = None
+                visited_hp.clear()
+                eventos_provisional.clear()
+
     return pd.DataFrame(eventos)
 
 # Nueva función para detectar el holding point.
@@ -208,7 +229,7 @@ df["lon"] = df["surface_position"].apply(lambda x: x[1], meta=("lon", "float64")
 
 meta = {
     "ICAO": str,
-    "ultimo_parado": "datetime64[ns]",
+    "primer_parado": "datetime64[ns]",
     "despegue": "datetime64[ns]",
     "tiempo_espera": float,
     "aircraft_type": str,
