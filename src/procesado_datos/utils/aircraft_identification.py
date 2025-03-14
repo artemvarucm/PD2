@@ -62,6 +62,25 @@ class AircraftIdentificationMessage(MessageType):
         return typecode >= 1 and typecode <= 4
     
 
+    def getCA(self, hex):
+        tc = self.getTypeCode(hex)
+        # Asegurar que tc no es None antes de comparar
+        if tc is None or not (1 <= tc <= 4):
+            return None
+        try:
+            return pms.decoder.adsb.category(hex)
+        except Exception:
+            return None
+
+
+    def getAircraftType(self, hex):
+        tc = self.getTypeCode(hex)
+        ca = self.getCA(hex)
+
+        if tc in self.vortexDictionary and ca in self.vortexDictionary[tc]:
+            return self.vortexDictionary[tc][ca]
+        return None
+    
     def updateRowFromHex(self, row, hex):
         callsign = pms.decoder.adsb.callsign(hex)
         tc = self.getTypeCode(hex)

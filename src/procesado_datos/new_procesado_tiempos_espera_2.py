@@ -1,0 +1,261 @@
+import dask.dataframe as dd
+import pandas as pd
+import time
+import pyModeS as pms
+import base64
+
+from pyproj import Transformer
+from shapely.geometry import Point, Polygon
+
+from dask.array import result_type
+from dask.diagnostics import ProgressBar
+import geopandas as gpd  # para leer el geojson
+
+# ============================
+# 1. Cargar y preparar Holding Points con Buffer
+# ============================
+# Cargar el geojson de holding points (en CRS WGS84)
+holding_points = gpd.read_file("data/geojson/holding_points.geojson")
+
+# Reproyectar a un CRS métrico (por ejemplo, UTM 30N; usa el EPSG adecuado para tu zona)
+holding_points_utm = holding_points.to_crs(epsg=32630)
+
+# Crear un buffer de 50 metros alrededor de cada holding point
+holding_points_utm['buffer'] = holding_points_utm.buffer(50)
+
+# Crear un transformer para convertir puntos de WGS84 (EPSG:4326) a UTM (EPSG:32630)
+transformer = Transformer.from_crs("EPSG:4326", "EPSG:32630", always_xy=True)
+
+def transform_point(point):
+    """Transforma un punto de WGS84 a UTM."""
+    x, y = transformer.transform(point.x, point.y)
+    return Point(x, y)
+
+def find_holding_point_with_buffer(lon, lat):
+    """
+    Dado un par de coordenadas (en WGS84), transforma el punto a UTM y verifica
+    si se encuentra dentro de alguno de los buffers de los holding points.
+    Devuelve el DESIGNATOR (u otro identificador) si coincide o None.
+    """
+    point = Point(lon, lat)
+    point_utm = transform_point(point)
+    for idx, row in holding_points_utm.iterrows():
+        if row['buffer'].contains(point_utm):
+            return row.get("DESIGNATOR", f"holding_point_{idx}")
+    return None
+
+def getSurfaceVelocity(hex_str):
+    binary_message = pms.hex2bin(hex_str)
+    encoded_speed = int(binary_message[37:44], 2)
+    if encoded_speed == 0:
+        return None  # SPEED NOT AVAILABLE
+    elif encoded_speed == 1:
+        return 0.0    # STOPPED (v < 0.125 kt)
+    elif 2 <= encoded_speed < 9:
+        return (encoded_speed - 2) * 0.125 + 0.125
+    elif 9 <= encoded_speed < 13:
+        return (encoded_speed - 9) * 0.25 + 1
+    elif 13 <= encoded_speed < 39:
+        return (encoded_speed - 13) * 0.5 + 2
+    elif 39 <= encoded_speed < 94:
+        return (encoded_speed - 39) * 1 + 15
+    elif 94 <= encoded_speed < 109:
+        return (encoded_speed - 94) * 2 + 70
+    elif 109 <= encoded_speed < 124:
+        return (encoded_speed - 109) * 5 + 100
+    elif encoded_speed == 124:
+        return 175
+    else:
+        return None
+
+
+def getSurfacePosition(hex):
+    RAD_LAT = 40.51
+    RAD_LON = -3.53
+    lat, lon = pms.adsb.position_with_ref(hex, RAD_LAT, RAD_LON)
+    return lat, lon
+
+
+def compute_surface_velocity(row):
+    if 5 <= row["TC"] <= 8:
+        return getSurfaceVelocity(row["messageHex"])
+    else:
+        return None
+
+def compute_surface_position(row):
+    if 5 <= row["TC"] <= 8:
+        return getSurfacePosition(row["messageHex"])
+    else:
+        return None
+
+
+def find_runway(lon, lat):
+    point = Point(lon, lat)
+    if rwy_polygon_18R_36L.contains(point):
+        return "18R/36L"
+    elif rwy_polygon_18L_36R.contains(point):
+        return "18L/36R"
+    elif rwy_polygon_14L_32R.contains(point):
+        return "14L/32R"
+    elif rwy_polygon_14R_32L.contains(point):
+        return "14R/32L"
+    else:
+        return None
+
+
+
+# 3. Función para segmentar vuelos por grupo (por cada ICAO)
+def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
+    """
+    Para un grupo de mensajes (un mismo ICAO) ordenados cronológicamente,
+    se detecta la transición: se guarda el último instante en que el avión está en tierra
+    (OnGround == 1) y, en cuanto se detecta el primer mensaje con OnGround == 0, se calcula el tiempo
+    de espera (diferencia de timestamps).
+    Se reinicia la marca de tierra para detectar ciclos sucesivos.
+    """
+    grupo = grupo.sort_values("timestamp")
+
+    eventos = []
+    eventos_provisional = []
+    visited_hp = set()
+
+    # Variables para seguimiento de estado
+    primer_parado = None
+    ultimaLat, ultimaLon = None, None
+    aircraftType = None
+
+    for _, row in grupo.iterrows():
+        # Si el mensaje es de superficie y se puede decodificar la velocidad,
+        # y esta es exactamente 0, se considera que el avión está parado.
+        if ((aircraftType is None) & (row["TC"] > 0) & (row["TC"] < 5)):
+            if ((row["AircraftType"] not in ["No category information", "Reserved", "ERROR"]) | (row["TC"] != 1)):
+                aircraftType = row["AircraftType"]
+
+
+        if pd.notna(row.get("surface_velocity")) and row["surface_velocity"] == 0:
+            hp = find_holding_point_with_buffer(row["lon"], row["lat"])
+            if ((hp is not None) & (hp not in visited_hp)):
+                visited_hp.add(hp)
+                primer_parado = row["timestamp"]
+
+                eventos_provisional.append({
+                    "ICAO": row["ICAO"],
+                    "primer_parado": primer_parado,
+                    "despegue": None,
+                    "tiempo_espera": None,
+                    "aircraft_type": aircraftType,
+                    "lat": None,
+                    "lon": None,
+                    "holding_point": hp,
+                })
+
+        if (pd.notna(row.get("lat")) and pd.notna(row.get("lon"))):
+            ultimaLat = row["lat"]
+            ultimaLon = row["lon"]
+
+
+        # Cuando se detecta que el avión ya está en aire (OnGround == 0)
+        if ((row["OnGround"] == 0) & (row["DL"] == 11)):
+            if primer_parado is not None:
+                tiempo_despegue = row["timestamp"]
+
+                # Filtrar eventos provisionales del mismo avión
+                eventos_asociados = [e for e in eventos_provisional if e["ICAO"] == row["ICAO"]]
+
+                for evento in eventos_asociados:
+                    evento["despegue"] = tiempo_despegue
+                    evento["tiempo_espera"] = (tiempo_despegue - evento["primer_parado"]).total_seconds()
+                    evento["lat"] = ultimaLat
+                    evento["lon"] = ultimaLon
+
+                    eventos.append(evento)
+
+                ultimaLat, ultimaLon = None, None
+                primer_parado = None
+                aircraftType = None
+                visited_hp.clear()
+                eventos_provisional.clear()
+
+    return pd.DataFrame(eventos)
+
+# Nueva función para detectar el holding point.
+"""
+def find_holding_point(lon, lat):
+    point = Point(lon, lat)
+    # Se recorre cada holding point del GeoJSON
+    for idx, row in holding_points.iterrows():
+        # Se asume que la geometría está en la columna 'geometry'
+        if row['geometry'].contains(point):
+            # Se devuelve, por ejemplo, el nombre (o cualquier identificador que tenga el geojson)
+            return row.get('name', f"holding_point_{idx}")
+    return None
+"""
+
+rwy_polygon_18R_36L = Polygon([
+    (-3.582, 40.492383), (-3.5695, 40.492383), (-3.5695, 40.537929), (-3.582, 40.537929)
+])
+
+rwy_polygon_18L_36R = Polygon([
+    (-3.564441, 40.499172), (-3.549, 40.499172), (-3.549, 40.537472), (-3.564441, 40.537472)
+])
+
+rwy_polygon_14L_32R = Polygon([
+    (-3.531683, 40.464310), (-3.524645, 40.468620), (-3.556317, 40.498519), (-3.564652, 40.495647)
+])
+
+rwy_polygon_14R_32L = Polygon([
+    (-3.547648, 40.450661), (-3.539580, 40.454710), (-3.575714, 40.488141), (-3.582924, 40.484224)
+])
+
+
+
+df = dd.read_csv("datos_semana.csv", sep=",", parse_dates=["timestamp"], dtype={'AircraftType': 'object'})  # o el patrón que hayas definido
+df["surface_velocity"] = df.apply(
+    compute_surface_velocity, axis=1, meta=("surface_velocity", float)
+)
+df["surface_position"] = df.apply(
+    compute_surface_position,
+    axis=1,
+    meta=("surface_position", object)
+)
+
+df["surface_position"] = df["surface_position"].apply(
+    lambda x: (None, None) if x is None else x,
+    meta=("surface_position", object)
+)
+
+df["lat"] = df["surface_position"].apply(lambda x: x[0], meta=("lat", "float64"))
+df["lon"] = df["surface_position"].apply(lambda x: x[1], meta=("lon", "float64"))
+
+meta = {
+    "ICAO": str,
+    "primer_parado": "datetime64[ns]",
+    "despegue": "datetime64[ns]",
+    "tiempo_espera": float,
+    "aircraft_type": str,
+    "lat": "float64",
+    "lon": "float64",
+    "holding_point": str,
+}
+
+with ProgressBar():
+    eventos_espera = df.groupby("ICAO").apply(segmentar_vuelos, meta=meta).compute()
+
+eventos_espera["fecha_despegue"] = eventos_espera["despegue"].dt.date
+eventos_espera["hora_despegue"] = eventos_espera["despegue"].dt.hour
+
+eventos_espera["runway"] = eventos_espera.apply(
+    lambda row: find_runway(row["lon"], row["lat"]),
+    axis=1
+)
+
+
+estadisticas_por_dia_hora = eventos_espera.groupby(
+    ["fecha_despegue", "hora_despegue"]
+)["tiempo_espera"].agg(["mean", "median", "count"]).reset_index()
+
+print("Estadísticas de tiempo de espera (en segundos) por hora de despegue:")
+print(estadisticas_por_dia_hora)
+
+with ProgressBar():
+    eventos_espera.to_csv('eventos_espera_semana_nuevo.csv', index=False)
