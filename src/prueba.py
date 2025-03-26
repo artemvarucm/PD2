@@ -18,16 +18,16 @@ df = pd.read_csv("data/ex1/eventos_espera_semana_nuevo.csv")
 
 spark = SparkSession.builder.appName("SparkWandBExample").getOrCreate()
 
-wandb.init(
-    project='pruebaPD2',
-    name="modelo_2",
-    entity='marbaldo-complutense-university-of-madrid', 
-    config={
-        'learning_rate': 10,
-        'batch_size': 64,
-        'epochs': 10
-    }
-)
+# wandb.init(
+#     project='pruebaPD2',
+#     name="modelo_3",
+#     entity='marbaldo-complutense-university-of-madrid', 
+#     config={
+#         'learning_rate': 10,
+#         'batch_size': 64,
+#         'epochs': 10
+#     }
+# )
 
 
 # Configura el callback de W&B
@@ -96,7 +96,7 @@ data = spark.read.csv("data/ex1/eventos_espera_semana_nuevo.csv", header=True, i
 wandb.init(
     project='pruebaPD2',
     name="modelo_spark",
-    entity='marbaldo-complutense-university-of-madrid', 
+    entity='dacoleto-complutense-university-of-madrid', 
     config={
         'learning_rate': 10,
         'batch_size': 64,
@@ -126,6 +126,8 @@ lr_model = lr.fit(train_data)
 
 # Evaluar el modelo en el conjunto de prueba
 test_results = lr_model.evaluate(test_data)
+
+print("AAAAAAAAAAAAAAAAAAA", test_results.rootMeanSquaredError,test_results.r2 )
 
 # Registrar los resultados y las métricas en W&B
 wandb.log({

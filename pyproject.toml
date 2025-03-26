@@ -26,4 +26,7 @@ dependencies = [
     "beautifulsoup4>=4.12.3",
     "scikit-learn==1.6",
     "tensorflow==2.16.2",
+    "keras>=3.9.0",
+    "pyspark>=3.5.5",
+    "wandb>=0.19.8",
 ]
