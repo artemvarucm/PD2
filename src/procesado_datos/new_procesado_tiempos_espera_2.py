@@ -132,21 +132,32 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                 aircraftType = row["AircraftType"]
 
 
-        if pd.notna(row.get("surface_velocity")) and row["surface_velocity"] == 0:
+        if pd.notna(row.get("surface_velocity")):
+            flagPrimerParado = False
+            parado = ""
+            if(row["surface_velocity"] == 0):
+                parado = "Para"
+            else:
+                parado = "No para"
+                if (flagPrimerParado):
+                    eventos_provisional[0]["ultimo_parado"] = row["timestamp"]
             hp = find_holding_point_with_buffer(row["lon"], row["lat"])
             if ((hp is not None) & (hp not in visited_hp)):
                 visited_hp.add(hp)
                 primer_parado = row["timestamp"]
-
+                if(parado == "Para"):
+                    flagPrimerParado = True
                 eventos_provisional.append({
                     "ICAO": row["ICAO"],
                     "primer_parado": primer_parado,
+                    "ultimo_parado": None,
                     "despegue": None,
                     "tiempo_espera": None,
                     "aircraft_type": aircraftType,
                     "lat": None,
                     "lon": None,
                     "holding_point": hp,
+                    "parado": parado
                 })
 
         if (pd.notna(row.get("lat")) and pd.notna(row.get("lon"))):
@@ -236,6 +247,7 @@ meta = {
     "lat": "float64",
     "lon": "float64",
     "holding_point": str,
+    "parado": str
 }
 
 with ProgressBar():
@@ -258,4 +270,4 @@ print("Estadísticas de tiempo de espera (en segundos) por hora de despegue:")
 print(estadisticas_por_dia_hora)
 
 with ProgressBar():
-    eventos_espera.to_csv('eventos_espera_semana_nuevo.csv', index=False)
+    eventos_espera.to_csv('eventos_espera_semana_hp.csv', index=False)
