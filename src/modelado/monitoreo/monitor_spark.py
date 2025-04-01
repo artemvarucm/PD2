@@ -1,0 +1,169 @@
+from monitor_general import MonitorGeneral
+from pyspark.ml.feature import VectorAssembler, StandardScaler,  StringIndexer
+from sklearn.model_selection import train_test_split
+from pyspark.ml import Pipeline
+from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator
+import wandb
+
+class MonitorSpark(MonitorGeneral):
+
+    METRICAS_REGRESION = ['rmse', 'mse', 'mae']
+    METRICAS_CLASIFICACION = ['accuracy', 'f1']
+
+    def __init__(self, modelo, data, y, spark_session, regresion, project='spark_PD2', name="modelo_spark", entity='dacoleto-complutense-university-of-madrid'):
+        """
+        Inicializa el monitor para el modelo de machine learning.
+        :param modelo: Modelo de machine learning a monitorizar
+        :param data: Conjunto de datos a evaluar
+        :param y: Variable objetivo
+        :param spark_session: Sesión de Spark
+        :param project: Nombre del proyecto en W&B
+        :param name: Nombre del experimento
+        :param entity: Nombre de la entidad en W&B
+        """
+        super().__init__(modelo=modelo, data=data, y=y, regression=regresion, project=project, name=name, entity=entity)
+        self.spark_session = spark_session
+        self.pipeline = self.buildPipeline()
+        
+    def buildPipeline(self):
+        X = self.data.columns.copy()
+        X.remove(self.y)
+        assembler = VectorAssembler( inputCols = X, outputCol ='X')
+        scaler = StandardScaler(inputCol='X', outputCol='X_scaled')
+        
+        return Pipeline(stages=[assembler, scaler, self.modelo])
+
+    def visualizeMetrics(self, resultados_metricas, metricas, groupby=None, name="metricas"):
+        """
+        Visualiza las métricas en W&B.
+        :param resultados_metricas: Resultados de las métricas
+        :param metricas: Métricas a visualizar  
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param name: Nombre de la visualización de métricas
+        """
+                                
+        tabla_metricas = self.buildTable(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+        
+        if groupby is not None: 
+            self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
+
+    def buildTable(self, resultados_metricas, metricas, groupby=None, name="metricas"):
+        """
+        Construye una tabla de métricas para registrar en W&B.
+        :param resultados_metricas: Resultados de las métricas
+        :return: Tabla de métricas
+        """
+        if groupby is not None:
+            tabla_metricas = wandb.Table(columns=[groupby] + metricas)
+            for g, metricas in resultados_metricas.items():
+                fila = [g] + [metricas[m] for m in metricas]
+                tabla_metricas.add_data(*fila)
+            #self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)            
+        else:
+            tabla_metricas = wandb.Table(columns=metricas)
+            fila = [resultados_metricas[m] for m in resultados_metricas]
+            tabla_metricas.add_data(*fila)
+        
+        wandb.log({name: tabla_metricas})
+
+        return tabla_metricas
+
+    def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
+        """
+        Construye una tabla de métricas para registrar en W&B.
+        :param resultados_metricas: Resultados de las métricas
+        :return: Tabla de métricas
+        """
+        for metrica in metricas:
+                wandb.log({
+                    f"{name}_{metrica}": wandb.plot.line(
+                        tabla_metricas, groupby, metrica, title=metrica
+                    )
+                })
+
+    def calculateMetrics(self, test_results, metricas):
+        """
+        Calcula las métricas de regresión y las registra en W&B.
+        :param test_results: Resultados de la evaluación del modelo
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param kwargs: Otros parámetros
+        """
+        resultados_metricas = dict()
+        for m in metricas:
+            evaluador = RegressionEvaluator(labelCol=self.y, predictionCol="prediction", metricName=m)
+            resultado = evaluador.evaluate(test_results)         
+            resultados_metricas[m] = resultado
+        
+        return resultados_metricas
+        
+    def evaluate(self, groupby=None, name="metricas"):
+        """
+        Evalua el modelo registra las métricas en W&B.
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param name: Nombre de la visualización de métricas
+        """
+        # Dividir los datos en entrenamiento y prueba
+        train_data, test_data = self.data.randomSplit([0.8, 0.2], seed=7)
+
+        # Entrenar el modelo
+        self.pipeline_model = self.pipeline.fit(train_data)
+        
+        metricas = self.METRICAS_REGRESION if self.regression else self.METRICAS_CLASIFICACION
+        resultados_metricas = dict()
+        
+        if groupby is not None:
+            valores_agrupar = test_data.select(groupby).distinct().orderBy(groupby).collect()
+            for valor in valores_agrupar:
+                valor = valor[0]
+                test_data_grouped = test_data.filter(test_data[groupby] == valor)
+                test_results = self.pipeline_model.transform(test_data_grouped)
+                resultados_metricas[valor] = self.calculateMetrics(test_results=test_results, metricas=metricas)
+            
+        else:
+            test_results = self.pipeline_model.transform(test_data)
+            resultados_metricas = self.calculateMetrics(test_results=test_results, metricas=metricas)
+        
+        self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+        
+
+
+from pyspark.sql.functions import unix_timestamp, hour
+from pyspark.ml.regression import LinearRegression
+from pyspark.sql import SparkSession
+import pandas as pd
+
+spark = SparkSession.builder.appName("SparkWandBExample").getOrCreate()
+data = spark.read.csv("data/ex1/eventos_espera_semana_nuevo.csv", header=True, inferSchema=True)
+
+
+data = data.drop("ICAO", "lat", "lon")
+data = data.withColumn("fecha_despegue", unix_timestamp("fecha_despegue").cast("double"))
+data = data.withColumn("ultimo_parado", unix_timestamp("ultimo_parado").cast("double"))
+data = data.withColumn("despegue", unix_timestamp("despegue").cast("double"))
+
+data = data.dropna()
+
+# Convertir columnas de tipo string a índices numéricos
+indexer_aircraft_type = StringIndexer(inputCol="aircraft_type", outputCol="aircraft_type_ind")
+
+indexer_aircraft_type_model = indexer_aircraft_type.fit(data)
+data = indexer_aircraft_type_model.transform(data)
+indexer_holding_point = StringIndexer(inputCol="holding_point", outputCol="holding_point_ind")
+indexer_holding_point_model = indexer_holding_point.fit(data)
+data = indexer_holding_point_model.transform(data)
+indexer_runway = StringIndexer(inputCol="runway", outputCol="runway_ind")
+indexer_runway_model = indexer_runway.fit(data)
+data = indexer_runway_model.transform(data) 
+
+data = data.drop("aircraft_type", "holding_point", "runway")
+
+# Definir el modelo de regresión lineal
+lr = LinearRegression(featuresCol='X_scaled', labelCol='tiempo_espera', maxIter=100, regParam=0.1)
+"""
+monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_por_hora")
+monitor_spark.evaluate(groupby="hora_despegue", name="metricas_por_hora")
+"""
+monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_sin_agrupar")
+monitor_spark.evaluate(name="metricas_sin_agrupar")
+
+monitor_spark.finish()
