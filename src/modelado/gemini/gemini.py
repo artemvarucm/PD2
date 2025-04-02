@@ -50,7 +50,7 @@ query_icao_function = {
 }
 
 # Configuración del cliente y herramientas para la API
-client = genai.Client(api_key="AIzaSyAmfr-v2EC6ESqK5kKsvOk7gs6NMja1GO8")
+client = genai.Client(api_key="PON-TU-CLAVE")
 tools = types.Tool(function_declarations=[query_icao_function])
 config = types.GenerateContentConfig(tools=[tools])
 
