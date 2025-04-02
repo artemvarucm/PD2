@@ -36,7 +36,7 @@ def procesar_mensajes(partition):
 
 
 # Cargar y preparar datos
-df = dd.read_csv("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/src/archivo_dividido_1.csv", sep=";")
+df = dd.read_csv("archivo_dividido_1.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)

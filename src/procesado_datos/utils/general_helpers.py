@@ -11,7 +11,7 @@ def getTypeCode(hex):
     return pms.common.typecode(hex)
 
 def getICAO(hex):
-    return str(pms.common.icao(hex))
+    return str(pms.common.icao(hex)).lower()
 
 def msgIsCorrupted(hex):
     return (pms.crc(hex) != 0)
