@@ -1,0 +1,36 @@
+import dask.dataframe as dd
+import rs1090
+from dask.diagnostics import ProgressBar
+from utils import base64toHEX
+
+# localización radar
+RAD_LAT = 40.51
+RAD_LON = -3.53
+
+df = dd.read_csv("202412010000_202412072359.csv", sep=";")
+df = df.drop(columns="Unnamed: 2")
+df["messageHex"] = df["message"].apply(base64toHEX, meta=("message", str))
+
+def decode_message(row):
+    newRow = row
+    if len(row["messageHex"]) in [14, 28]:
+        decoded = rs1090.decode(row["messageHex"], row["ts_kafka"], reference=(RAD_LAT, RAD_LON))
+    else:
+        decoded = dict()
+
+    newRow["icao"] = decoded.get("icao24", None)
+    newRow["DL"] = decoded.get("df", None)
+    newRow["TC"] = decoded.get("tc", None)
+    newRow["capability"] = decoded.get("capability", None)
+    newRow["wake_vortex"] = decoded.get("wake_vortex", None)
+    newRow["heading"] = decoded["bds60"].get("heading", None) if ("bds60" in decoded and "bds50" not in decoded) else None
+    newRow["vertical_rate"] = decoded["bds60"].get("vrate_inertial", None) if ("bds60" in decoded and "bds50" not in decoded) else None
+    newRow["lat"] = decoded.get("latitude", None)
+    newRow["lon"] = decoded.get("longitude", None)
+    newRow["surface_velocity"] = decoded.get("groundspeed", None)
+
+    return newRow
+
+with ProgressBar():
+    df = df.apply(decode_message, axis=1)
+    df.to_csv('datos_semana.csv', index=False, single_file=True)
