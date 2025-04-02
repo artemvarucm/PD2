@@ -7,10 +7,6 @@ from utils import base64toHEX
 RAD_LAT = 40.51
 RAD_LON = -3.53
 
-df = dd.read_csv("202412010000_202412072359.csv", sep=";")
-df = df.drop(columns="Unnamed: 2")
-df["messageHex"] = df["message"].apply(base64toHEX, meta=("message", str))
-
 def decode_message(row):
     newRow = row
     if len(row["messageHex"]) in [14, 28]:
@@ -18,7 +14,7 @@ def decode_message(row):
     else:
         decoded = dict()
 
-    newRow["icao"] = decoded.get("icao24", None)
+    newRow["ICAO"] = decoded.get("icao24", None)
     newRow["DL"] = decoded.get("df", None)
     newRow["TC"] = decoded.get("tc", None)
     newRow["capability"] = decoded.get("capability", None)
@@ -32,5 +28,10 @@ def decode_message(row):
     return newRow
 
 with ProgressBar():
-    df = df.apply(decode_message, axis=1)
-    df.to_csv('datos_semana.csv', index=False, single_file=True)
+    df = dd.read_csv("archivo_dividido_1.csv", sep=";")
+    df = df.drop(columns="Unnamed: 2")
+    df["messageHex"] = df["message"].apply(base64toHEX, meta=("message", str))
+    df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
+
+    df_decoded = df.apply(decode_message, axis=1)
+    df_decoded.to_csv('datos_semana.csv', index=False, single_file=True)
