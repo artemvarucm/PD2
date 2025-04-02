@@ -1,0 +1,42 @@
+{
+  "os": "Linux-6.8.0-38-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.12.4",
+  "startedAt": "2025-04-02T11:03:49.472934Z",
+  "program": "/home/aula1008/PD2/src/modelado/monitoreo/monitor_spark.py",
+  "codePath": "src/modelado/monitoreo/monitor_spark.py",
+  "git": {
+    "remote": "https://github.com/artemvarucm/PD2.git",
+    "commit": "9897150766de551daa46e26c279090753e84a8dc"
+  },
+  "email": "marbaldo@ucm.es",
+  "root": "/home/aula1008/PD2",
+  "host": "Clon1008",
+  "executable": "/home/aula1008/PD2/.venv/bin/python3",
+  "codePathLocal": "src/modelado/monitoreo/monitor_spark.py",
+  "cpu_count": 16,
+  "cpu_count_logical": 24,
+  "gpu": "NVIDIA GeForce RTX 3070",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "203374612480",
+      "used": "157029085184"
+    }
+  },
+  "memory": {
+    "total": "33306910720"
+  },
+  "cpu": {
+    "count": 16,
+    "countLogical": 24
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 3070",
+      "memoryTotal": "8589934592",
+      "cudaCores": 5888,
+      "architecture": "Ampere"
+    }
+  ],
+  "cudaVersion": "12.5"
+}

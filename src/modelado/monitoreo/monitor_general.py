@@ -14,6 +14,7 @@ class MonitorGeneral(ABC):
         :param entity: Nombre de la entidad en W&B
         """
         self.modelo = modelo
+        self.modelo.setFeaturesCol("X_scaled")
         self.data = data
         self.y = y
         self.regression = regression

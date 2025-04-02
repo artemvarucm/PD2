@@ -6,7 +6,6 @@ from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationE
 import wandb
 
 class MonitorSpark(MonitorGeneral):
-
     METRICAS_REGRESION = ['rmse', 'mse', 'mae']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
@@ -124,6 +123,9 @@ class MonitorSpark(MonitorGeneral):
             resultados_metricas = self.calculateMetrics(test_results=test_results, metricas=metricas)
         
         self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+
+    def setModel(self, model):
+        self.model = model
         
 
 
@@ -158,12 +160,12 @@ data = indexer_runway_model.transform(data)
 data = data.drop("aircraft_type", "holding_point", "runway")
 
 # Definir el modelo de regresión lineal
-lr = LinearRegression(featuresCol='X_scaled', labelCol='tiempo_espera', maxIter=100, regParam=0.1)
-"""
+lr = LinearRegression(featuresCol='lol', labelCol='tiempo_espera', maxIter=100, regParam=0.1)
+
 monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_por_hora")
 monitor_spark.evaluate(groupby="hora_despegue", name="metricas_por_hora")
 """
 monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_sin_agrupar")
 monitor_spark.evaluate(name="metricas_sin_agrupar")
-
+"""
 monitor_spark.finish()
