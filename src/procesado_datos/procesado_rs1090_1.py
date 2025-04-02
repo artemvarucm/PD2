@@ -27,11 +27,26 @@ def decode_message(row):
 
     return newRow
 
-with ProgressBar():
-    df = dd.read_csv("archivo_dividido_1.csv", sep=";")
-    df = df.drop(columns="Unnamed: 2")
-    df["messageHex"] = df["message"].apply(base64toHEX, meta=("message", str))
-    df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
+df = dd.read_csv("archivo_dividido_1.csv", sep=";")
+df = df.drop(columns="Unnamed: 2")
+df["messageHex"] = df["message"].apply(base64toHEX, meta=("message", str))
+df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
 
-    df_decoded = df.apply(decode_message, axis=1)
+df_decoded = df.apply(decode_message, axis=1, meta={
+    'ts_kafka': 'float64',
+    'message': 'object',
+    'messageHex': 'object',
+    'timestamp': 'datetime64[ns]',
+    'ICAO': 'object',
+    'DL': int,
+    'TC': int,
+    'capability': 'object',
+    'wake_vortex': 'object',
+    'heading': 'float64',
+    'vertical_rate': int,
+    'lat': 'float64',
+    'lon': 'float64',
+    'surface_velocity': 'float64'
+    })
+with ProgressBar():
     df_decoded.to_csv('datos_semana.csv', index=False, single_file=True)
