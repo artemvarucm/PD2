@@ -68,6 +68,10 @@ def getSurfaceVelocity(hex_str):
     else:
         return None
 
+def getVelocity(hex):
+    speed, angle, vertical_rate, speed_type=pms.decoder.adsb.velocity(hex, source=False)
+    return speed, angle, vertical_rate, speed_type
+
 
 def getSurfacePosition(hex):
     RAD_LAT = 40.51
@@ -157,7 +161,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     "lat": None,
                     "lon": None,
                     "holding_point": hp,
-                    "parado": parado
+                    "parado": parado, 
                 })
 
         if (pd.notna(row.get("lat")) and pd.notna(row.get("lon"))):
@@ -221,22 +225,6 @@ rwy_polygon_14R_32L = Polygon([
 
 
 df = dd.read_csv("datos_semana.csv", sep=",", parse_dates=["timestamp"], dtype={'AircraftType': 'object'})  # o el patrón que hayas definido
-df["surface_velocity"] = df.apply(
-    compute_surface_velocity, axis=1, meta=("surface_velocity", float)
-)
-df["surface_position"] = df.apply(
-    compute_surface_position,
-    axis=1,
-    meta=("surface_position", object)
-)
-
-df["surface_position"] = df["surface_position"].apply(
-    lambda x: (None, None) if x is None else x,
-    meta=("surface_position", object)
-)
-
-df["lat"] = df["surface_position"].apply(lambda x: x[0], meta=("lat", "float64"))
-df["lon"] = df["surface_position"].apply(lambda x: x[1], meta=("lon", "float64"))
 
 meta = {
     "ICAO": str,
