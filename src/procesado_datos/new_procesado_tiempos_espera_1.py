@@ -64,6 +64,7 @@ def compute_surface_position(row):
     else:
         return None
     
+"""
 def filtrar_heading(grupo: pd.DataFrame) -> pd.DataFrame:
     filtro14 = grupo["heading"].between(138,142)
     filtro36 = (grupo["heading"] >= 358) | (grupo["heading"] <= 2)
@@ -76,7 +77,7 @@ def filtrar_heading(grupo: pd.DataFrame) -> pd.DataFrame:
         return grupo
     else:
         return grupo.iloc[0:0]
-
+"""
 
 # Función que procesa todos los tipos de mensajes de una vez
 def procesar_mensajes(partition):
@@ -188,10 +189,12 @@ meta2 = {
 }
 
 with ProgressBar():
-    df_headings = df.groupby("ICAO").apply(filtrar_heading, meta = meta2)
-    df_headings = df_headings.reset_index(drop=True)
+    #df_headings = df.groupby("ICAO").apply(filtrar_heading, meta = meta2)
+    filtro14 = df["heading"].between(138,142)
+    filtro36 = (df["heading"] >= 358) | (df["heading"] <= 2)
 
-with ProgressBar():
+    df_headings = df[filtro14 | filtro36].reset_index(drop=True)
+
     # Guardar el resultado
-    df.to_csv('datos_prueba.csv', index=False, single_file=True)
+    df_headings.to_csv('datos_prueba.csv', index=False, single_file=True)
 
