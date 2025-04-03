@@ -86,13 +86,13 @@ def procesar_mensajes(partition):
     partition['TC'] = np.nan
     partition['AircraftType'] = None
 
-    # Procesar mensajes tipo 17 y 18
-    mask_17_18 = (partition['DL'] == 17) | (partition['DL'] == 18)
-    if mask_17_18.any():
-        partition.loc[mask_17_18, 'OnGround'] = partition.loc[mask_17_18, 'messageHex'].apply(getOnGround)
-        partition.loc[mask_17_18, 'TC'] = partition.loc[mask_17_18, 'messageHex'].apply(getTypeCode)
+    # Procesar mensajes tipo 11, 17 y 18
+    mask = partition["DL"].isin([11, 17, 18])
+    if mask.any():
+        partition.loc[mask, 'OnGround'] = partition.loc[mask, 'messageHex'].apply(getOnGround)
+        partition.loc[mask, 'TC'] = partition.loc[mask, 'messageHex'].apply(getTypeCode)
         airIdMsg = AircraftIdentificationMessage()
-        partition.loc[mask_17_18, 'AircraftType'] = partition.loc[mask_17_18, 'messageHex'].apply(
+        partition.loc[mask, 'AircraftType'] = partition.loc[mask, 'messageHex'].apply(
             airIdMsg.getAircraftType)
 
         # Añadir velocidad y posición en superficie
@@ -128,14 +128,15 @@ def procesar_mensajes(partition):
 
 
 # Cargar y preparar datos
-df = dd.read_csv("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/src/archivo_dividido_1.csv", sep=";")
+df = dd.read_csv("archivo_dividido_1.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
 df["DL"] = df["messageHex"].apply(getDownlink, meta=int)
 
-filtroDL = df["DL"].isin([17, 18])
-df = df[filtroDL].reset_index()
+# sobra, esta en procesar_mensaje
+#filtroDL = df["DL"].isin([11, 17, 18])
+#df = df[filtroDL].reset_index()
 
 df["ICAO"] = df["messageHex"].apply(getICAO, meta=str)
 df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
@@ -144,7 +145,7 @@ df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
 df = df.map_partitions(
     procesar_mensajes,
     meta={
-        'index': 'int64',
+        #'index': 'int64',
         'ts_kafka': 'int64',
         'message': 'object',
         'messageHex': 'object',
