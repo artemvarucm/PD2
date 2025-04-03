@@ -1,3 +1,5 @@
+from warnings import catch_warnings
+
 import dask.dataframe as dd
 import pyModeS.decoder.bds.bds60
 import pandas as pd
@@ -30,13 +32,18 @@ def getSurfaceVelocity(hex_str):
     else:
         return None
 
-def getVelocity(hex):
-    speed, angle, vertical_rate, speed_type=pms.decoder.adsb.velocity(hex, source=False)
-    return speed, angle, vertical_rate, speed_type
+def getVelocity(row):
+    try:
+        speed, angle, vertical_rate, speed_type=pms.decoder.adsb.velocity(row["messageHex"])
+        return speed, angle, vertical_rate, speed_type
+    except:
+        return (None, None, None, None)
 
-def getAltitud(hex):
-    altitud = pms.decoder.adsb.altitud(hex)
-    return altitud
+def getAltitud(row):
+    try:
+        return pms.decoder.adsb.altitude(row["messageHex"])
+    except:
+        return None
 
 def getSurfacePosition(hex):
     RAD_LAT = 40.51
@@ -89,39 +96,38 @@ def procesar_mensajes(partition):
 
         # Añadir velocidad y posición en superficie
     partition["surface_velocity"] = partition.apply(
-        compute_surface_velocity, axis=1, meta=("surface_velocity", float)
+        compute_surface_velocity, axis=1
     )
 
     partition["altitud"] = partition.apply(
-        getAltitud, axis=1, meta=("altitud", float)
+        getAltitud, axis=1
     )
 
     partition["surface_position"] = partition.apply(
-        compute_surface_position, axis=1, meta=("surface_position", object)
+        compute_surface_position, axis=1
     )
 
     partition["velocity_data"] = partition.apply(
-        getVelocity, axis=1, meta=("velocity_data", object)
+        getVelocity, axis=1
     )
 
     partition["surface_position"] = partition["surface_position"].apply(
-        lambda x: (None, None) if x is None else x,
-        meta=("surface_position", object)
+        lambda x: (None, None) if x is None else x
     )
 
-    partition["lat"] = partition["surface_position"].apply(lambda x: x[0], meta=("lat", "float64"))
-    partition["lon"] = partition["surface_position"].apply(lambda x: x[1], meta=("lon", "float64"))
+    partition["lat"] = partition["surface_position"].apply(lambda x: x[0])
+    partition["lon"] = partition["surface_position"].apply(lambda x: x[1])
 
-    partition["velocity"] = partition["velocity_data"].apply(lambda x: x[0], meta=("velocity", "float64"))
-    partition["heading"] = partition["velocity_data"].apply(lambda x: x[1], meta=("heading", "float64"))
-    partition["vertical_rate"] = partition["velocity_data"].apply(lambda x: x[2], meta=("vertical_rate", "float64"))
-    partition["speed_type"] = partition["velocity_data"].apply(lambda x: x[3], meta=("speed_type", "float64"))
+    partition["velocity"] = partition["velocity_data"].apply(lambda x: x[0],)
+    partition["heading"] = partition["velocity_data"].apply(lambda x: x[1])
+    partition["vertical_rate"] = partition["velocity_data"].apply(lambda x: x[2])
+    partition["speed_type"] = partition["velocity_data"].apply(lambda x: x[3])
 
     return partition
 
 
 # Cargar y preparar datos
-df = dd.read_csv("archivo_dividido_1.csv", sep=";")
+df = dd.read_csv("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/src/archivo_dividido_1.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
@@ -137,19 +143,28 @@ df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
 df = df.map_partitions(
     procesar_mensajes,
     meta={
-        **df._meta.dtypes.to_dict(),
-        'OnGround': 'float64',  # Usamos float64 para poder tener NaN
+        'index': 'int64',
+        'ts_kafka': 'int64',
+        'message': 'object',
+        'messageHex': 'object',
+        'DL': 'int64',
+        'ICAO': 'object',
+        'timestamp': 'datetime64[ns]',
+        'OnGround': 'float64',
         'TC': 'float64',
         'AircraftType': 'object',
         'surface_velocity': 'float64',
+        'altitud': 'float64',
+        'surface_position': 'object',
+        'velocity_data': 'object',
         'lat': 'float64',
         'lon': 'float64',
+        'velocity': 'float64',
         'heading': 'float64',
         'vertical_rate': 'float64',
-        'altitud': 'float64',
-        'speed_type': str,
-        'velocity': 'float64'
+        'speed_type': 'object'
     }
+
 )
 
 meta2 = {
@@ -166,7 +181,9 @@ meta2 = {
     'vertical_rate': 'float64',
     'altitud': 'float64',
     'speed_type': str,
-    'velocity': 'float64'
+    'velocity': 'float64',
+    'surface_position': 'object',
+    'velocity_data': 'object'
     
 }
 
