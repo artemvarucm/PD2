@@ -64,7 +64,7 @@ def compute_surface_position(row):
     else:
         return None
     
-"""
+
 def filtrar_heading(grupo: pd.DataFrame) -> pd.DataFrame:
     filtro14 = grupo["heading"].between(138,142)
     filtro36 = (grupo["heading"] >= 358) | (grupo["heading"] <= 2)
@@ -77,7 +77,7 @@ def filtrar_heading(grupo: pd.DataFrame) -> pd.DataFrame:
         return grupo
     else:
         return grupo.iloc[0:0]
-"""
+
 
 # Función que procesa todos los tipos de mensajes de una vez
 def procesar_mensajes(partition):
@@ -87,13 +87,11 @@ def procesar_mensajes(partition):
     partition['AircraftType'] = None
 
     # Procesar mensajes tipo 11, 17 y 18
-    mask = partition["DL"].isin([11, 17, 18])
-    if mask.any():
-        partition.loc[mask, 'OnGround'] = partition.loc[mask, 'messageHex'].apply(getOnGround)
-        partition.loc[mask, 'TC'] = partition.loc[mask, 'messageHex'].apply(getTypeCode)
-        airIdMsg = AircraftIdentificationMessage()
-        partition.loc[mask, 'AircraftType'] = partition.loc[mask, 'messageHex'].apply(
-            airIdMsg.getAircraftType)
+    partition['OnGround'] = partition['messageHex'].apply(getOnGround)
+    partition['TC'] = partition['messageHex'].apply(getTypeCode)
+    airIdMsg = AircraftIdentificationMessage()
+    partition['AircraftType'] = partition['messageHex'].apply(
+        airIdMsg.getAircraftType)
 
         # Añadir velocidad y posición en superficie
     partition["surface_velocity"] = partition.apply(
@@ -128,16 +126,15 @@ def procesar_mensajes(partition):
 
 
 # Cargar y preparar datos
-df = dd.read_csv("archivo_dividido_1.csv", sep=";")
+df = dd.read_csv("test.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
 df["DL"] = df["messageHex"].apply(getDownlink, meta=int)
 
 # sobra, esta en procesar_mensaje
-#filtroDL = df["DL"].isin([11, 17, 18])
-#df = df[filtroDL].reset_index()
-
+filtroDL = df["DL"].isin([11, 17, 18])
+df = df[filtroDL].reset_index()
 df["ICAO"] = df["messageHex"].apply(getICAO, meta=str)
 df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
 
@@ -145,7 +142,7 @@ df['timestamp'] = dd.to_datetime(df['ts_kafka'], unit='ms')
 df = df.map_partitions(
     procesar_mensajes,
     meta={
-        #'index': 'int64',
+        'index': 'int64',
         'ts_kafka': 'int64',
         'message': 'object',
         'messageHex': 'object',
@@ -170,6 +167,10 @@ df = df.map_partitions(
 )
 
 meta2 = {
+    'index': 'int64',
+    'ts_kafka': 'int64',
+    'message': 'object',
+    'messageHex': 'object',
     'DL': 'int',
     'ICAO': str,
     'timestamp': 'datetime64[ns]',
@@ -177,25 +178,26 @@ meta2 = {
     'TC': 'float64',
     'AircraftType': 'object',
     'surface_velocity': 'float64',
+    'altitud': 'float64',
+    'surface_position': 'object',
+    'velocity_data': 'object',
     'lat': 'float64',
     'lon': 'float64',
+    'velocity': 'float64',
     'heading': 'float64',
     'vertical_rate': 'float64',
-    'altitud': 'float64',
     'speed_type': str,
-    'velocity': 'float64',
-    'surface_position': 'object',
-    'velocity_data': 'object'
     
 }
 
 with ProgressBar():
-    #df_headings = df.groupby("ICAO").apply(filtrar_heading, meta = meta2)
-    filtro14 = df["heading"].between(138,142)
-    filtro36 = (df["heading"] >= 358) | (df["heading"] <= 2)
-
-    df_headings = df[filtro14 | filtro36].reset_index(drop=True)
-
+    df_headings = df.groupby("ICAO").apply(filtrar_heading, meta = meta2)
+    #filtro14 = df["heading"].between(138,142)
+    #filtro36 = (df["heading"] >= 358) | (df["heading"] <= 2)
+    
+    # heading puede ser NA
+    #df_headings = df[df["heading"].isna() | filtro14 | filtro36].reset_index(drop=True)
+    print(len(df_headings) / len(df))
     # Guardar el resultado
     df_headings.to_csv('datos_prueba.csv', index=False, single_file=True)
 
