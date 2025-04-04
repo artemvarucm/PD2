@@ -5,7 +5,7 @@ from wandb.integration.keras import WandbMetricsLogger
 from wandb.integration.keras import WandbModelCheckpoint
 
 class MonitorTensorflow(MonitorGeneral):
-    def __init__(self, modelo, data, y, num_epochs, project='spark_PD2', name="modelo_spark", entity='dacoleto-complutense-university-of-madrid'):
+    def __init__(self, modelo, data, y, num_epochs, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid'):
         """
         Inicializa el monitor para el modelo de machine learning.
         :param modelo: Modelo de machine learning a monitorizar
@@ -18,35 +18,69 @@ class MonitorTensorflow(MonitorGeneral):
         """
         self.num_epochs = num_epochs
         super().__init__(modelo=modelo, data=data, y=y, project=project, name=name, entity=entity)
-        
     
-    def buildTable(self, resultados_metricas, metricas, groupby=None, name="metricas", train=False):
+    def visualizeMetrics(self, resultados_metricas, metricas, train=False, groupby=None, name="metricas"):
+        """
+        Visualiza las métricas en W&B.
+        :param resultados_metricas: Resultados de las métricas
+        :param metricas: Métricas a visualizar  
+        :param train: True si la tabla es para metricas de entrenamiento, False si es para métricas de test
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param name: Nombre de la visualización de métricas
+        """
+                                
+        tabla_metricas = self.buildTable(resultados_metricas, metricas=metricas, train=train, groupby=groupby, name=name)
+        
+        if groupby is not None: 
+            self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
+
+    def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
         """
         Construye una tabla de métricas para registrar en W&B.
         :param resultados_metricas: Resultados de las métricas
         :return: Tabla de métricas
         """
-        name = f"{name}_entrenamiento" if train else f"{name}_test"
-        columns = ["epoch"] + metricas if train  else metricas
-
-        if groupby is not None:
-            tabla_metricas = wandb.Table(columns=[groupby] + columns)
-            for g, metricas in resultados_metricas.items():
-                fila = [g] + [metricas[m] for m in metricas]
-                tabla_metricas.add_data(*fila)
-        else:
+        for metrica in metricas:
+                wandb.log({
+                    f"{name}_{metrica}": wandb.plot.bar(
+                        tabla_metricas, groupby, metrica, title=metrica
+                    )
+                })
+    
+    def buildTable(self, resultados_metricas, metricas, train=False, groupby=None, name="metricas"):
+        """
+        Construye una tabla de métricas para registrar en W&B.
+        :param resultados_metricas: Resultados de las métricas
+        :param metricas: Métricas a visualizar
+        :param train: True si la tabla es para metricas de entrenamiento, False si es para métricas de test
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param name: Nombre de la visualización de métricas
+        :return: Tabla de métricas
+        """
+        if train:
+            name = f"{name}_entrenamiento"
+            columns = ["epoch"] + metricas
             tabla_metricas = wandb.Table(columns=columns)
-            if train:
-                for epoch in range(self.num_epochs):
+            for epoch in range(self.num_epochs):
                     fila = [epoch] + [resultados_metricas[metrica][epoch] for metrica in metricas]
+                    tabla_metricas.add_data(*fila)
+        else:
+            name = f"{name}_test"  
+            columns =  [groupby] + metricas if groupby is not None else metricas  
+            tabla_metricas = wandb.Table(columns=columns)       
+            
+            if groupby is not None:
+                for valor_agrupar in resultados_metricas.keys():
+                    fila = [valor_agrupar] + [resultados_metricas[valor_agrupar][m] for m in metricas]
                     tabla_metricas.add_data(*fila)
             else:
                 fila = [resultados_metricas[metrica] for metrica in metricas]
                 tabla_metricas.add_data(*fila)
-                        
+        
         wandb.log({name: tabla_metricas})
+        if groupby is not None and not train:
+            return tabla_metricas
 
-        #return tabla_metricas
     
     def evaluate(self, groupby=None, name="metricas"):
         """
@@ -57,7 +91,7 @@ class MonitorTensorflow(MonitorGeneral):
 
         wandb_metrics_logger = WandbMetricsLogger()
         wandb_model_checkpoint = WandbModelCheckpoint(name+"-{epoch:02d}.keras", monitor='val_loss')
-        # Dividir los datos en entrenamiento y prueba
+
         X = self.data.drop(columns=[self.y])
         y = self.data[self.y]
 
@@ -67,12 +101,19 @@ class MonitorTensorflow(MonitorGeneral):
         # Entrenar el modelo
         self.modelo.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=self.num_epochs, callbacks=[wandb_metrics_logger, wandb_model_checkpoint])
 
-        self.buildTable(resultados_metricas=self.modelo.history.history, metricas=list(self.modelo.history.history.keys()), groupby=None, name="metricas", train=True)
+        self.visualizeMetrics(resultados_metricas=self.modelo.history.history, metricas=list(self.modelo.history.history.keys()), train=True, groupby=None, name=name)    
+
+        if groupby is not None:
+            test_results = dict()
+            grupos = X_test.groupby([groupby], sort=True)
+            for valor_agrupar, X_grupo_test in grupos:
+                y_g_test = y_test.filter(items = X_grupo_test.index, axis=0)
+                test_results[valor_agrupar[0]] = self.modelo.evaluate(X_grupo_test, y_g_test, return_dict=True)
+
+        else:
+            test_results = self.modelo.evaluate(X_test, y_test, return_dict=True)
         
-        test_results = self.modelo.evaluate(X_test, y_test, return_dict=True)
-    
-        self.buildTable(resultados_metricas=test_results, metricas=list(test_results.keys()), groupby=None, name="metricas", train=False)
-    
+        self.visualizeMetrics(resultados_metricas=test_results, metricas=[m for m in list(self.modelo.history.history.keys()) if "val" not in m], groupby=groupby, name=name)    
         
 import pandas as pd
 import tensorflow as tf
@@ -111,6 +152,11 @@ model.compile(optimizer='adam',
               loss='mse',
               metrics=["mae", "mse", "msle", "cosine_similarity", custom_metric_lolaso])
 
-monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid')
-monitor_tf.evaluate(groupby=None, name="modelo1")
+
+monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_por_hora", entity='dacoleto-complutense-university-of-madrid')
+monitor_tf.evaluate(groupby="hora_despegue", name="modelo_por_hora")
+"""
+monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_general", entity='dacoleto-complutense-university-of-madrid')
+monitor_tf.evaluate(name="modelo_general")
+"""
 monitor_tf.finish()

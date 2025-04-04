@@ -28,9 +28,20 @@ class MonitorGeneral(ABC):
         pass
     
     @abstractmethod
+    def visualizeMetrics(self, *args):
+        """Método abstracto para visualizar las métricas"""
+        pass
+
+    @abstractmethod
     def buildTable(self, *args):
         """Método abstracto para construir una tabla de métricas"""
         pass
+
+    @abstractmethod
+    def buildGraph(self, *args):
+        """Método abstracto para construir una gráfica de métricas"""
+        pass
+            
 
     def finish(self):
         """Finaliza la sesión de W&B"""

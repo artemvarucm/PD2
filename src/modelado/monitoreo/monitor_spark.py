@@ -77,7 +77,7 @@ class MonitorSpark(MonitorGeneral):
         """
         for metrica in metricas:
                 wandb.log({
-                    f"{name}_{metrica}": wandb.plot.line(
+                    f"{name}_{metrica}": wandb.plot.bar(
                         tabla_metricas, groupby, metrica, title=metrica
                     )
                 })
