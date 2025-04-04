@@ -15,13 +15,16 @@ class MonitorSpark(MonitorGeneral):
         :param modelo: Modelo de machine learning a monitorizar
         :param data: Conjunto de datos a evaluar
         :param y: Variable objetivo
+        :param regresion: True si el modelo es de regresión, False si es de clasificación
         :param spark_session: Sesión de Spark
         :param project: Nombre del proyecto en W&B
         :param name: Nombre del experimento
         :param entity: Nombre de la entidad en W&B
         """
-        super().__init__(modelo=modelo, data=data, y=y, regression=regresion, project=project, name=name, entity=entity)
+        super().__init__(modelo=modelo, data=data, y=y, project=project, name=name, entity=entity)
         self.spark_session = spark_session
+        self.regression = regresion
+        self.modelo.setFeaturesCol("X_scaled")
         self.pipeline = self.buildPipeline()
         
     def buildPipeline(self):
@@ -57,7 +60,6 @@ class MonitorSpark(MonitorGeneral):
             for g, metricas in resultados_metricas.items():
                 fila = [g] + [metricas[m] for m in metricas]
                 tabla_metricas.add_data(*fila)
-            #self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)            
         else:
             tabla_metricas = wandb.Table(columns=metricas)
             fila = [resultados_metricas[m] for m in resultados_metricas]
