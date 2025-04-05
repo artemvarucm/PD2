@@ -65,7 +65,7 @@ class MonitorTensorflow(MonitorGeneral):
                     fila = [epoch] + [resultados_metricas[metrica][epoch] for metrica in metricas]
                     tabla_metricas.add_data(*fila)
         else:
-            name = f"{name}_test"  
+            name = f"{name}_test" if groupby is None else f"{name}_test_{groupby}"
             columns =  [groupby] + metricas if groupby is not None else metricas  
             tabla_metricas = wandb.Table(columns=columns)       
             
@@ -77,17 +77,19 @@ class MonitorTensorflow(MonitorGeneral):
                 fila = [resultados_metricas[metrica] for metrica in metricas]
                 tabla_metricas.add_data(*fila)
         
-        wandb.log({name: tabla_metricas})
-        if groupby is not None and not train:
-            return tabla_metricas
+            wandb.log({name: tabla_metricas})
+            if groupby is not None and not train:
+                return tabla_metricas
 
     
-    def evaluate(self, groupby=None, name="metricas"):
+    def evaluate(self, groupby=None, name=None):
         """
         Evalua el modelo registra las métricas en W&B.
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
         """
+        if name is None:
+            name = self.name
 
         wandb_metrics_logger = WandbMetricsLogger()
         wandb_model_checkpoint = WandbModelCheckpoint(name+"-{epoch:02d}.keras", monitor='val_loss')
@@ -100,20 +102,19 @@ class MonitorTensorflow(MonitorGeneral):
 
         # Entrenar el modelo
         self.modelo.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=self.num_epochs, callbacks=[wandb_metrics_logger, wandb_model_checkpoint])
-
         self.visualizeMetrics(resultados_metricas=self.modelo.history.history, metricas=list(self.modelo.history.history.keys()), train=True, groupby=None, name=name)    
 
+        test_results = self.modelo.evaluate(X_test, y_test, return_dict=True)
+        self.visualizeMetrics(resultados_metricas=test_results, metricas=[m for m in list(self.modelo.history.history.keys()) if "val" not in m], groupby=None, name=name)
+        
         if groupby is not None:
             test_results = dict()
             grupos = X_test.groupby([groupby], sort=True)
             for valor_agrupar, X_grupo_test in grupos:
                 y_g_test = y_test.filter(items = X_grupo_test.index, axis=0)
                 test_results[valor_agrupar[0]] = self.modelo.evaluate(X_grupo_test, y_g_test, return_dict=True)
-
-        else:
-            test_results = self.modelo.evaluate(X_test, y_test, return_dict=True)
-        
-        self.visualizeMetrics(resultados_metricas=test_results, metricas=[m for m in list(self.modelo.history.history.keys()) if "val" not in m], groupby=groupby, name=name)    
+            
+            self.visualizeMetrics(resultados_metricas=test_results, metricas=[m for m in list(self.modelo.history.history.keys()) if "val" not in m], groupby=groupby, name=name)    
         
 import pandas as pd
 import tensorflow as tf
@@ -152,11 +153,11 @@ model.compile(optimizer='adam',
               loss='mse',
               metrics=["mae", "mse", "msle", "cosine_similarity", custom_metric_lolaso])
 
-
-monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_por_hora", entity='dacoleto-complutense-university-of-madrid')
-monitor_tf.evaluate(groupby="hora_despegue", name="modelo_por_hora")
+"""
+monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid')
+monitor_tf.evaluate(groupby="hora_despegue")
 """
 monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_general", entity='dacoleto-complutense-university-of-madrid')
-monitor_tf.evaluate(name="modelo_general")
-"""
+monitor_tf.evaluate()
+
 monitor_tf.finish()

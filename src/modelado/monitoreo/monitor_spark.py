@@ -67,7 +67,8 @@ class MonitorSpark(MonitorGeneral):
         
         wandb.log({name: tabla_metricas})
 
-        return tabla_metricas
+        if groupby is not None:
+            return tabla_metricas
 
     def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
         """
@@ -97,12 +98,15 @@ class MonitorSpark(MonitorGeneral):
         
         return resultados_metricas
         
-    def evaluate(self, groupby=None, name="metricas"):
+    def evaluate(self, groupby=None, name=None):
         """
         Evalua el modelo registra las métricas en W&B.
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
         """
+        if name is None:
+            name = self.name
+
         # Dividir los datos en entrenamiento y prueba
         train_data, test_data = self.data.randomSplit([0.8, 0.2], seed=7)
 
@@ -110,21 +114,21 @@ class MonitorSpark(MonitorGeneral):
         self.pipeline_model = self.pipeline.fit(train_data)
         
         metricas = self.METRICAS_REGRESION if self.regression else self.METRICAS_CLASIFICACION
-        resultados_metricas = dict()
-        
+
+        test_results = self.pipeline_model.transform(test_data)
+        resultados_metricas = self.calculateMetrics(test_results=test_results, metricas=metricas)
+        self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=None, name=name)
+
         if groupby is not None:
+            resultados_metricas = dict()
             valores_agrupar = test_data.select(groupby).distinct().orderBy(groupby).collect()
             for valor in valores_agrupar:
                 valor = valor[0]
                 test_data_grouped = test_data.filter(test_data[groupby] == valor)
                 test_results = self.pipeline_model.transform(test_data_grouped)
                 resultados_metricas[valor] = self.calculateMetrics(test_results=test_results, metricas=metricas)
-            
-        else:
-            test_results = self.pipeline_model.transform(test_data)
-            resultados_metricas = self.calculateMetrics(test_results=test_results, metricas=metricas)
         
-        self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+            self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
 
     def setModel(self, model):
         self.model = model
@@ -163,11 +167,11 @@ data = data.drop("aircraft_type", "holding_point", "runway")
 
 # Definir el modelo de regresión lineal
 lr = LinearRegression(featuresCol='lol', labelCol='tiempo_espera', maxIter=100, regParam=0.1)
-
+"""
 monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_por_hora")
-monitor_spark.evaluate(groupby="hora_despegue", name="metricas_por_hora")
+monitor_spark.evaluate(groupby="hora_despegue")
 """
 monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_sin_agrupar")
-monitor_spark.evaluate(name="metricas_sin_agrupar")
-"""
+monitor_spark.evaluate()
+
 monitor_spark.finish()

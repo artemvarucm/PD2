@@ -2,7 +2,7 @@ import wandb
 from abc import ABC, abstractmethod
 
 class MonitorGeneral(ABC):
-    def __init__(self, modelo, data, y, project='pruebaPD2', name="modelo_spark", entity='dacoleto-complutense-university-of-madrid'):
+    def __init__(self, modelo, data, y, project='pruebaPD2', name="modelo", entity='dacoleto-complutense-university-of-madrid'):
         """
         Inicializa el monitor general para el modelo de machine learning.
         :param modelo: Modelo de machine learning a monitorizar
@@ -12,6 +12,7 @@ class MonitorGeneral(ABC):
         :param name: Nombre del experimento
         :param entity: Nombre de la entidad en W&B
         """
+        self.name = name
         self.modelo = modelo
         self.data = data
         self.y = y
