@@ -92,7 +92,7 @@ class MonitorTensorflow(MonitorGeneral):
             name = self.name
 
         wandb_metrics_logger = WandbMetricsLogger()
-        wandb_model_checkpoint = WandbModelCheckpoint(name+"-{epoch:02d}.keras", monitor='val_loss')
+        wandb_model_checkpoint = WandbModelCheckpoint(f"./src/modelado/monitoreo/modelos/modelos_tensorflow/{name}/"+"{epoch:02d}.keras", monitor='val_loss')
 
         X = self.data.drop(columns=[self.y])
         y = self.data[self.y]

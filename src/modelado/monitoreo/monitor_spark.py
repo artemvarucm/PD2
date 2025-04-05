@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from pyspark.ml import Pipeline
 from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator
 import wandb
+import os
 
 class MonitorSpark(MonitorGeneral):
     METRICAS_REGRESION = ['rmse', 'mse', 'mae']
@@ -130,6 +131,15 @@ class MonitorSpark(MonitorGeneral):
         
             self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
 
+        #Guardar el modelo
+        #self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_spark/{name}")
+
+    def saveModel(self, path):
+        self.pipeline_model.write().overwrite().save(path)
+        model_artifact = wandb.Artifact(name=self.name, type="model")
+        model_artifact.add_dir(path)
+        wandb.log_artifact(model_artifact)
+
     def setModel(self, model):
         self.model = model
         
@@ -167,11 +177,11 @@ data = data.drop("aircraft_type", "holding_point", "runway")
 
 # Definir el modelo de regresión lineal
 lr = LinearRegression(featuresCol='lol', labelCol='tiempo_espera', maxIter=100, regParam=0.1)
-"""
+
 monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_por_hora")
 monitor_spark.evaluate(groupby="hora_despegue")
 """
 monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_sin_agrupar")
 monitor_spark.evaluate()
-
+"""
 monitor_spark.finish()
