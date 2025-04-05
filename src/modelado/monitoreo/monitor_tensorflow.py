@@ -27,8 +27,7 @@ class MonitorTensorflow(MonitorGeneral):
         :param train: True si la tabla es para metricas de entrenamiento, False si es para métricas de test
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
-        """
-                                
+        """                  
         tabla_metricas = self.buildTable(resultados_metricas, metricas=metricas, train=train, groupby=groupby, name=name)
         
         if groupby is not None: 
@@ -36,9 +35,11 @@ class MonitorTensorflow(MonitorGeneral):
 
     def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
         """
-        Construye una tabla de métricas para registrar en W&B.
-        :param resultados_metricas: Resultados de las métricas
-        :return: Tabla de métricas
+        Construye un grafico para cada métricay lo registra en W&B.
+        :param tabla_metricas: Tabla de métricas
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param metricas: Métricas a visualizar
+        :param name: Nombre de la visualización de métricas
         """
         for metrica in metricas:
                 wandb.log({

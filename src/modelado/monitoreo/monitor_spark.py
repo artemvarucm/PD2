@@ -54,6 +54,8 @@ class MonitorSpark(MonitorGeneral):
         """
         Construye una tabla de métricas para registrar en W&B.
         :param resultados_metricas: Resultados de las métricas
+        :param metricas: Métricas a visualizar
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :return: Tabla de métricas
         """
         if groupby is not None:
@@ -73,9 +75,11 @@ class MonitorSpark(MonitorGeneral):
 
     def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
         """
-        Construye una tabla de métricas para registrar en W&B.
-        :param resultados_metricas: Resultados de las métricas
-        :return: Tabla de métricas
+        Construye un grafico para cada métricay lo registra en W&B.
+        :param tabla_metricas: Tabla de métricas
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param metricas: Métricas a visualizar
+        :param name: Nombre de la visualización de métricas
         """
         for metrica in metricas:
                 wandb.log({
@@ -87,9 +91,8 @@ class MonitorSpark(MonitorGeneral):
     def calculateMetrics(self, test_results, metricas):
         """
         Calcula las métricas de regresión y las registra en W&B.
-        :param test_results: Resultados de la evaluación del modelo
-        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
-        :param kwargs: Otros parámetros
+        :param test_results: Predicciones del modelo
+        :param metricas: Métricas a calcular
         """
         resultados_metricas = dict()
         for m in metricas:
@@ -101,7 +104,7 @@ class MonitorSpark(MonitorGeneral):
         
     def evaluate(self, groupby=None, name=None):
         """
-        Evalua el modelo registra las métricas en W&B.
+        Evalua el modelo y registra las métricas en W&B.
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
         """
