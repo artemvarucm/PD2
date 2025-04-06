@@ -77,7 +77,10 @@ def filtrar_heading(grupo: pd.DataFrame) -> pd.DataFrame:
         return grupo
     else:
         return grupo.iloc[0:0]
-
+    
+def extract_aircraft_type(hex):
+    msg = AircraftIdentificationMessage()
+    return msg.getAircraftType(hex)
 
 # Función que procesa todos los tipos de mensajes de una vez
 def procesar_mensajes(partition):
@@ -89,9 +92,8 @@ def procesar_mensajes(partition):
     # Procesar mensajes tipo 11, 17 y 18
     partition['OnGround'] = partition['messageHex'].apply(getOnGround)
     partition['TC'] = partition['messageHex'].apply(getTypeCode)
-    airIdMsg = AircraftIdentificationMessage()
     partition['AircraftType'] = partition['messageHex'].apply(
-        airIdMsg.getAircraftType)
+        extract_aircraft_type)
 
         # Añadir velocidad y posición en superficie
     partition["surface_velocity"] = partition.apply(
@@ -126,7 +128,7 @@ def procesar_mensajes(partition):
 
 
 # Cargar y preparar datos
-df = dd.read_csv("test.csv", sep=";")
+df = dd.read_csv("archivo_dividido_1.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
