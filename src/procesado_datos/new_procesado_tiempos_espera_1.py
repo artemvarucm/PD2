@@ -128,7 +128,7 @@ def procesar_mensajes(partition):
 
 
 # Cargar y preparar datos
-df = dd.read_csv("archivo_dividido_1.csv", sep=";")
+df = dd.read_csv("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/src/archivo_dividido_1.csv", sep=";")
 df = df.drop(columns="Unnamed: 2")
 
 df["messageHex"] = df["message"].apply(base64toHEX, meta=str)
@@ -149,7 +149,7 @@ df = df.map_partitions(
         'message': 'object',
         'messageHex': 'object',
         'DL': 'int64',
-        'ICAO': 'object',
+        'ICAO': str,
         'timestamp': 'datetime64[ns]',
         'OnGround': 'float64',
         'TC': 'float64',
@@ -173,7 +173,7 @@ meta2 = {
     'ts_kafka': 'int64',
     'message': 'object',
     'messageHex': 'object',
-    'DL': 'int',
+    'DL': 'int64',
     'ICAO': str,
     'timestamp': 'datetime64[ns]',
     'OnGround': 'float64',  
@@ -188,7 +188,7 @@ meta2 = {
     'velocity': 'float64',
     'heading': 'float64',
     'vertical_rate': 'float64',
-    'speed_type': str,
+    'speed_type': 'object',
     
 }
 
@@ -201,5 +201,5 @@ with ProgressBar():
     #df_headings = df[df["heading"].isna() | filtro14 | filtro36].reset_index(drop=True)
     print(len(df_headings) / len(df))
     # Guardar el resultado
-    df_headings.to_csv('datos_prueba.csv', index=False, single_file=True)
+    df_headings.to_csv('datos_prueba_nuevo.csv', index=False, single_file=True)
 
