@@ -72,8 +72,8 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     """
     grupo = grupo.sort_values("timestamp")
 
-    eventos = []
-    eventos_provisional = []
+    eventos = [] # tiene los puntos de espera de TODOS los despegues
+    eventos_provisional = [] # tiene los puntos de espera de 1 despegue
     visited_hp = set()
 
     # Variables para seguimiento de estado
@@ -111,12 +111,15 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     "parado": parado
                 })
             elif len(eventos_provisional) > 0:
-                if (hp is None or hp != eventos_provisional[-1]["holding_point"]):
+                if (
+                    (hp is None or hp != eventos_provisional[-1]["holding_point"])
+                    and eventos_provisional[-1]["salida_punto"] is None
+                    ):
                     # si se ha movido a otro punto o se ha salido de este
                     eventos_provisional[-1]["salida_punto"] = row["timestamp"]
                     eventos_provisional[-1]["salida_lon"] = row["lon"]
                     eventos_provisional[-1]["salida_lat"] = row["lat"]
-                else:
+                elif (hp == eventos_provisional[-1]["holding_point"]):
                     # se ha parado en el punto de espera
                     eventos_provisional[-1]["parado"] = True if (parado or eventos_provisional[-1]["parado"]) else False
 
