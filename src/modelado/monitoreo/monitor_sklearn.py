@@ -99,7 +99,25 @@ class MonitorSklearn(MonitorGeneral):
                     tabla_metricas, groupby, metrica, title=metrica
                 )
             })
+    
+    def buildScatter(self, real_values, predictions, name=f"Real vs Predicción"):
+        """
+        Con outliers no funciona
+        """
+        real_values = list(real_values)
+        predictions = list(predictions)
+        """
+        ind = real_values.index(43909.516)
+        real_values.pop(ind)
+        predictions.pop(ind)"""
 
+        table = wandb.Table(columns = ["valor_real", "prediccion"])
+        for i in range(len(real_values)):
+            table.add_data(real_values[i], predictions[i])
+
+        scatter_plot = wandb.plot.scatter(table, x="valor_real", y="prediccion", title=name)
+        wandb.log({name : scatter_plot})
+    
     def evaluate(self, groupby=None, name=None):
         """
         Evalua el modelo y registra las métricas en W&B.
@@ -117,6 +135,8 @@ class MonitorSklearn(MonitorGeneral):
         self.modelo.fit(X_train, y_train)
         y_pred = self.modelo.predict(X_test)
 
+        self.buildScatter(real_values=y_test, predictions=y_pred)
+
         metricas = self.METRICAS_REGRESION if self.regresion else self.METRICAS_CLASIFICACION
         resultados_metricas = self.calculateMetrics(y_true=y_test, y_pred=y_pred, metricas=metricas)
 
@@ -133,10 +153,11 @@ class MonitorSklearn(MonitorGeneral):
 
             self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
         
-        self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_sklearn/{self.name}.pickle")
+        #self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_sklearn/{self.name}.pkl")
 
     def saveModel(self, path):
-        modelo_pkl = pickle.dump(self.modelo, open(path, 'wb'))
+        with open(path, "wb") as m:
+            pickle.dump(self.modelo, m)
         model_artifact = wandb.Artifact(name=self.name, type="model")
         model_artifact.add_file(path)
         wandb.log_artifact(model_artifact)
@@ -163,11 +184,11 @@ df["despegue"] = (df["despegue"] - datetime.datetime(1970, 1, 1)).dt.total_secon
 df = df.drop(columns=["ICAO", "lat", "lon"])
 
 model = LinearRegression()
-
+"""
 monitor_sk = MonitorSklearn(modelo=model, data=df, y="tiempo_espera", regresion=True, project='sklearn_PD2', name="modelo_agrupado", entity='dacoleto-complutense-university-of-madrid')
 monitor_sk.evaluate(groupby="hora_despegue")
 """
 monitor_sk = MonitorSklearn(modelo=model, data=df, y="tiempo_espera", regresion=True, project='sklearn_PD2', name="modelo_general", entity='dacoleto-complutense-university-of-madrid')
 monitor_sk.evaluate()
-"""
+
 monitor_sk.finish()
