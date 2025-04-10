@@ -1,115 +1,164 @@
 import wandb
 from monitor_general import MonitorGeneral
+from sklearn.model_selection import train_test_split
+from wandb.integration.keras import WandbMetricsLogger
+from wandb.integration.keras import WandbModelCheckpoint
 
 class MonitorTensorflow(MonitorGeneral):
-    METRICAS_REGRESION = ['rmse', 'mse', 'mae']
-    METRICAS_CLASIFICACION = ['accuracy', 'f1']
-
-    def __init__(self, modelo, data, y, spark_session, regresion, project='spark_PD2', name="modelo_spark", entity='dacoleto-complutense-university-of-madrid'):
+    def __init__(self, modelo, data, y, num_epochs, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid'):
         """
         Inicializa el monitor para el modelo de machine learning.
         :param modelo: Modelo de machine learning a monitorizar
         :param data: Conjunto de datos a evaluar
         :param y: Variable objetivo
-        :param spark_session: Sesión de Spark
+        :param num_epochs: Número de épocas para el entrenamiento
         :param project: Nombre del proyecto en W&B
         :param name: Nombre del experimento
         :param entity: Nombre de la entidad en W&B
         """
-        super().__init__(modelo=modelo, data=data, y=y, regression=regresion, project=project, name=name, entity=entity)
-        self.spark_session = spark_session
-        self.pipeline = self.buildPipeline()
-        
-
-    def visualizeMetrics(self, resultados_metricas, metricas, groupby=None, name="metricas"):
+        self.num_epochs = num_epochs
+        super().__init__(modelo=modelo, data=data, y=y, project=project, name=name, entity=entity)
+    
+    def visualizeMetrics(self, resultados_metricas, metricas, train=False, groupby=None, name="metricas"):
         """
         Visualiza las métricas en W&B.
         :param resultados_metricas: Resultados de las métricas
         :param metricas: Métricas a visualizar  
+        :param train: True si la tabla es para metricas de entrenamiento, False si es para métricas de test
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
-        """
-                                
-        tabla_metricas = self.buildTable(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+        """                  
+        tabla_metricas = self.buildTable(resultados_metricas, metricas=metricas, train=train, groupby=groupby, name=name)
         
         if groupby is not None: 
             self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
 
-    def buildTable(self, resultados_metricas, metricas, groupby=None, name="metricas"):
-        """
-        Construye una tabla de métricas para registrar en W&B.
-        :param resultados_metricas: Resultados de las métricas
-        :return: Tabla de métricas
-        """
-        if groupby is not None:
-            tabla_metricas = wandb.Table(columns=[groupby] + metricas)
-            for g, metricas in resultados_metricas.items():
-                fila = [g] + [metricas[m] for m in metricas]
-                tabla_metricas.add_data(*fila)
-            #self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)            
-        else:
-            tabla_metricas = wandb.Table(columns=metricas)
-            fila = [resultados_metricas[m] for m in resultados_metricas]
-            tabla_metricas.add_data(*fila)
-        
-        wandb.log({name: tabla_metricas})
-
-        return tabla_metricas
-
     def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
         """
-        Construye una tabla de métricas para registrar en W&B.
-        :param resultados_metricas: Resultados de las métricas
-        :return: Tabla de métricas
+        Construye un grafico para cada métricay lo registra en W&B.
+        :param tabla_metricas: Tabla de métricas
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param metricas: Métricas a visualizar
+        :param name: Nombre de la visualización de métricas
         """
         for metrica in metricas:
                 wandb.log({
-                    f"{name}_{metrica}": wandb.plot.line(
+                    f"{name}_{metrica}": wandb.plot.bar(
                         tabla_metricas, groupby, metrica, title=metrica
                     )
                 })
-
-    def calculateMetrics(self, test_results, metricas):
+    
+    def buildTable(self, resultados_metricas, metricas, train=False, groupby=None, name="metricas"):
         """
-        Calcula las métricas de regresión y las registra en W&B.
-        :param test_results: Resultados de la evaluación del modelo
+        Construye una tabla de métricas para registrar en W&B.
+        :param resultados_metricas: Resultados de las métricas
+        :param metricas: Métricas a visualizar
+        :param train: True si la tabla es para metricas de entrenamiento, False si es para métricas de test
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
-        :param kwargs: Otros parámetros
+        :param name: Nombre de la visualización de métricas
+        :return: Tabla de métricas
         """
-        resultados_metricas = dict()
-        for m in metricas:
-            evaluador = RegressionEvaluator(labelCol=self.y, predictionCol="prediction", metricName=m)
-            resultado = evaluador.evaluate(test_results)         
-            resultados_metricas[m] = resultado
+        if train:
+            name = f"{name}_entrenamiento"
+            columns = ["epoch"] + metricas
+            tabla_metricas = wandb.Table(columns=columns)
+            for epoch in range(self.num_epochs):
+                    fila = [epoch] + [resultados_metricas[metrica][epoch] for metrica in metricas]
+                    tabla_metricas.add_data(*fila)
+        else:
+            name = f"{name}_test" if groupby is None else f"{name}_test_{groupby}"
+            columns =  [groupby] + metricas if groupby is not None else metricas  
+            tabla_metricas = wandb.Table(columns=columns)       
+            
+            if groupby is not None:
+                for valor_agrupar in resultados_metricas.keys():
+                    fila = [valor_agrupar] + [resultados_metricas[valor_agrupar][m] for m in metricas]
+                    tabla_metricas.add_data(*fila)
+            else:
+                fila = [resultados_metricas[metrica] for metrica in metricas]
+                tabla_metricas.add_data(*fila)
         
-        return resultados_metricas
-        
-    def evaluate(self, groupby=None, name="metricas"):
+            wandb.log({name: tabla_metricas})
+            if groupby is not None and not train:
+                return tabla_metricas
+
+    
+    def evaluate(self, groupby=None, name=None):
         """
         Evalua el modelo registra las métricas en W&B.
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
         """
-        # Dividir los datos en entrenamiento y prueba
-        train_data, test_data = self.data.randomSplit([0.8, 0.2], seed=7)
+        if name is None:
+            name = self.name
+
+        wandb_metrics_logger = WandbMetricsLogger()
+        wandb_model_checkpoint = WandbModelCheckpoint(f"./src/modelado/monitoreo/modelos/modelos_tensorflow/{name}/"+"{epoch:02d}.keras", monitor='val_loss')
+
+        X = self.data.drop(columns=[self.y])
+        y = self.data[self.y]
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=42)
 
         # Entrenar el modelo
-        self.pipeline_model = self.pipeline.fit(train_data)
-        
-        metricas = self.METRICAS_REGRESION if self.regression else self.METRICAS_CLASIFICACION
-        resultados_metricas = dict()
+        self.modelo.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=self.num_epochs, callbacks=[wandb_metrics_logger, wandb_model_checkpoint])
+        self.visualizeMetrics(resultados_metricas=self.modelo.history.history, metricas=list(self.modelo.history.history.keys()), train=True, groupby=None, name=name)    
+
+        test_results = self.modelo.evaluate(X_test, y_test, return_dict=True)
+        self.visualizeMetrics(resultados_metricas=test_results, metricas=[m for m in list(self.modelo.history.history.keys()) if "val" not in m], groupby=None, name=name)
         
         if groupby is not None:
-            valores_agrupar = test_data.select(groupby).distinct().orderBy(groupby).collect()
-            for valor in valores_agrupar:
-                valor = valor[0]
-                test_data_grouped = test_data.filter(test_data[groupby] == valor)
-                test_results = self.pipeline_model.transform(test_data_grouped)
-                resultados_metricas[valor] = self.calculateMetrics(test_results=test_results, metricas=metricas)
+            test_results = dict()
+            grupos = X_test.groupby([groupby], sort=True)
+            for valor_agrupar, X_grupo_test in grupos:
+                y_g_test = y_test.filter(items = X_grupo_test.index, axis=0)
+                test_results[valor_agrupar[0]] = self.modelo.evaluate(X_grupo_test, y_g_test, return_dict=True)
             
-        else:
-            test_results = self.pipeline_model.transform(test_data)
-            resultados_metricas = self.calculateMetrics(test_results=test_results, metricas=metricas)
+            self.visualizeMetrics(resultados_metricas=test_results, metricas=[m for m in list(self.modelo.history.history.keys()) if "val" not in m], groupby=groupby, name=name)    
         
-        self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
-        
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras import layers
+
+df = pd.read_csv("data/ex1/eventos_espera_semana_nuevo.csv")
+df = pd.get_dummies(df, columns=["aircraft_type", "runway", "holding_point"])
+import datetime
+
+# Asegúrate de que las columnas están en formato datetime
+df["fecha_despegue"] = pd.to_datetime(df["fecha_despegue"])
+df["ultimo_parado"] = pd.to_datetime(df["ultimo_parado"])
+df["despegue"] = pd.to_datetime(df["despegue"])
+
+# Convertir las fechas a segundos desde el 1 de enero de 1970
+df["fecha_despegue"] = (df["fecha_despegue"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
+df["ultimo_parado"] = (df["ultimo_parado"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
+df["despegue"] = (df["despegue"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
+
+df = df.drop(columns=["ICAO", "lat", "lon"])
+
+model = tf.keras.Sequential([
+    layers.Dense(64, activation='relu', input_shape=[len(df.drop(columns=["tiempo_espera"]).keys())]),
+    layers.Dense(1)
+])
+
+import tensorflow as tf
+
+# Función para la métrica personalizada
+def custom_metric_lolaso(y_true, y_pred):
+    return tf.reduce_mean(tf.abs(y_true - y_pred)-tf.abs(y_true - y_pred))
+
+
+# Compilación del modelo
+model.compile(optimizer='adam',
+              loss='mse',
+              metrics=["mae", "mse", "msle", "cosine_similarity", custom_metric_lolaso])
+
+"""
+monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid')
+monitor_tf.evaluate(groupby="hora_despegue")
+"""
+monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_general", entity='dacoleto-complutense-university-of-madrid')
+monitor_tf.evaluate()
+
+monitor_tf.finish()

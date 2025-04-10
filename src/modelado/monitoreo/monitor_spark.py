@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from pyspark.ml import Pipeline
 from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator
 import wandb
+import os
 
 class MonitorSpark(MonitorGeneral):
     METRICAS_REGRESION = ['rmse', 'mse', 'mae']
@@ -15,13 +16,16 @@ class MonitorSpark(MonitorGeneral):
         :param modelo: Modelo de machine learning a monitorizar
         :param data: Conjunto de datos a evaluar
         :param y: Variable objetivo
+        :param regresion: True si el modelo es de regresión, False si es de clasificación
         :param spark_session: Sesión de Spark
         :param project: Nombre del proyecto en W&B
         :param name: Nombre del experimento
         :param entity: Nombre de la entidad en W&B
         """
-        super().__init__(modelo=modelo, data=data, y=y, regression=regresion, project=project, name=name, entity=entity)
+        super().__init__(modelo=modelo, data=data, y=y, project=project, name=name, entity=entity)
         self.spark_session = spark_session
+        self.regression = regresion
+        self.modelo.setFeaturesCol("X_scaled")
         self.pipeline = self.buildPipeline()
         
     def buildPipeline(self):
@@ -50,6 +54,8 @@ class MonitorSpark(MonitorGeneral):
         """
         Construye una tabla de métricas para registrar en W&B.
         :param resultados_metricas: Resultados de las métricas
+        :param metricas: Métricas a visualizar
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :return: Tabla de métricas
         """
         if groupby is not None:
@@ -57,7 +63,6 @@ class MonitorSpark(MonitorGeneral):
             for g, metricas in resultados_metricas.items():
                 fila = [g] + [metricas[m] for m in metricas]
                 tabla_metricas.add_data(*fila)
-            #self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)            
         else:
             tabla_metricas = wandb.Table(columns=metricas)
             fila = [resultados_metricas[m] for m in resultados_metricas]
@@ -65,17 +70,20 @@ class MonitorSpark(MonitorGeneral):
         
         wandb.log({name: tabla_metricas})
 
-        return tabla_metricas
+        if groupby is not None:
+            return tabla_metricas
 
     def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
         """
-        Construye una tabla de métricas para registrar en W&B.
-        :param resultados_metricas: Resultados de las métricas
-        :return: Tabla de métricas
+        Construye un grafico para cada métricay lo registra en W&B.
+        :param tabla_metricas: Tabla de métricas
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param metricas: Métricas a visualizar
+        :param name: Nombre de la visualización de métricas
         """
         for metrica in metricas:
                 wandb.log({
-                    f"{name}_{metrica}": wandb.plot.line(
+                    f"{name}_{metrica}": wandb.plot.bar(
                         tabla_metricas, groupby, metrica, title=metrica
                     )
                 })
@@ -83,9 +91,8 @@ class MonitorSpark(MonitorGeneral):
     def calculateMetrics(self, test_results, metricas):
         """
         Calcula las métricas de regresión y las registra en W&B.
-        :param test_results: Resultados de la evaluación del modelo
-        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
-        :param kwargs: Otros parámetros
+        :param test_results: Predicciones del modelo
+        :param metricas: Métricas a calcular
         """
         resultados_metricas = dict()
         for m in metricas:
@@ -95,12 +102,15 @@ class MonitorSpark(MonitorGeneral):
         
         return resultados_metricas
         
-    def evaluate(self, groupby=None, name="metricas"):
+    def evaluate(self, groupby=None, name=None):
         """
-        Evalua el modelo registra las métricas en W&B.
+        Evalua el modelo y registra las métricas en W&B.
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
         """
+        if name is None:
+            name = self.name
+
         # Dividir los datos en entrenamiento y prueba
         train_data, test_data = self.data.randomSplit([0.8, 0.2], seed=7)
 
@@ -108,21 +118,30 @@ class MonitorSpark(MonitorGeneral):
         self.pipeline_model = self.pipeline.fit(train_data)
         
         metricas = self.METRICAS_REGRESION if self.regression else self.METRICAS_CLASIFICACION
-        resultados_metricas = dict()
-        
+
+        test_results = self.pipeline_model.transform(test_data)
+        resultados_metricas = self.calculateMetrics(test_results=test_results, metricas=metricas)
+        self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=None, name=name)
+
         if groupby is not None:
+            resultados_metricas = dict()
             valores_agrupar = test_data.select(groupby).distinct().orderBy(groupby).collect()
             for valor in valores_agrupar:
                 valor = valor[0]
                 test_data_grouped = test_data.filter(test_data[groupby] == valor)
                 test_results = self.pipeline_model.transform(test_data_grouped)
                 resultados_metricas[valor] = self.calculateMetrics(test_results=test_results, metricas=metricas)
-            
-        else:
-            test_results = self.pipeline_model.transform(test_data)
-            resultados_metricas = self.calculateMetrics(test_results=test_results, metricas=metricas)
         
-        self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+            self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+
+        #Guardar el modelo
+        #self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_spark/{name}")
+
+    def saveModel(self, path):
+        self.pipeline_model.write().overwrite().save(path)
+        model_artifact = wandb.Artifact(name=self.name, type="model")
+        model_artifact.add_dir(path)
+        wandb.log_artifact(model_artifact)
 
     def setModel(self, model):
         self.model = model
@@ -163,9 +182,9 @@ data = data.drop("aircraft_type", "holding_point", "runway")
 lr = LinearRegression(featuresCol='lol', labelCol='tiempo_espera', maxIter=100, regParam=0.1)
 
 monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_por_hora")
-monitor_spark.evaluate(groupby="hora_despegue", name="metricas_por_hora")
+monitor_spark.evaluate(groupby="hora_despegue")
 """
 monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_sin_agrupar")
-monitor_spark.evaluate(name="metricas_sin_agrupar")
+monitor_spark.evaluate()
 """
 monitor_spark.finish()

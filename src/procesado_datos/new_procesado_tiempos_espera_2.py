@@ -15,7 +15,7 @@ import geopandas as gpd  # para leer el geojson
 # 1. Cargar y preparar Holding Points con Buffer
 # ============================
 # Cargar el geojson de holding points (en CRS WGS84)
-holding_points = gpd.read_file("data/geojson/holding_points.geojson")
+holding_points = gpd.read_file("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/data/geojson/holding_points.geojson")
 
 # Reproyectar a un CRS métrico (por ejemplo, UTM 30N; usa el EPSG adecuado para tu zona)
 holding_points_utm = holding_points.to_crs(epsg=32630)
@@ -67,6 +67,10 @@ def getSurfaceVelocity(hex_str):
         return 175
     else:
         return None
+
+def getVelocity(hex):
+    speed, angle, vertical_rate, speed_type=pms.decoder.adsb.velocity(hex, source=False)
+    return speed, angle, vertical_rate, speed_type
 
 
 def getSurfacePosition(hex):
@@ -157,7 +161,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     "lat": None,
                     "lon": None,
                     "holding_point": hp,
-                    "parado": parado
+                    "parado": parado, 
                 })
 
         if (pd.notna(row.get("lat")) and pd.notna(row.get("lon"))):
@@ -220,27 +224,12 @@ rwy_polygon_14R_32L = Polygon([
 
 
 
-df = dd.read_csv("datos_semana.csv", sep=",", parse_dates=["timestamp"], dtype={'AircraftType': 'object'})  # o el patrón que hayas definido
-df["surface_velocity"] = df.apply(
-    compute_surface_velocity, axis=1, meta=("surface_velocity", float)
-)
-df["surface_position"] = df.apply(
-    compute_surface_position,
-    axis=1,
-    meta=("surface_position", object)
-)
-
-df["surface_position"] = df["surface_position"].apply(
-    lambda x: (None, None) if x is None else x,
-    meta=("surface_position", object)
-)
-
-df["lat"] = df["surface_position"].apply(lambda x: x[0], meta=("lat", "float64"))
-df["lon"] = df["surface_position"].apply(lambda x: x[1], meta=("lon", "float64"))
+df = dd.read_csv("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/src/procesado_datos/datos_prueba_nuevo.csv", sep=",", parse_dates=["timestamp"], dtype={'AircraftType': 'object', 5: 'str'}, na_values=["", "None", "(None, None)", "(None, None, None, None)"])  # o el patrón que hayas definido
 
 meta = {
     "ICAO": str,
     "primer_parado": "datetime64[ns]",
+    "ultimo_parado": "datetime64[ns]",
     "despegue": "datetime64[ns]",
     "tiempo_espera": float,
     "aircraft_type": str,
@@ -270,4 +259,4 @@ print("Estadísticas de tiempo de espera (en segundos) por hora de despegue:")
 print(estadisticas_por_dia_hora)
 
 with ProgressBar():
-    eventos_espera.to_csv('eventos_espera_semana_hp.csv', index=False)
+    eventos_espera.to_csv('test_nuevo.csv', index=False)
