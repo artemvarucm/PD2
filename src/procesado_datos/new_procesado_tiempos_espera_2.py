@@ -127,6 +127,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     primer_parado = None
     ultimaLat, ultimaLon = None, None
     aircraftType = None
+    flagPrimerParado = False
 
     for _, row in grupo.iterrows():
         # Si el mensaje es de superficie y se puede decodificar la velocidad,
@@ -134,23 +135,16 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
         if ((aircraftType is None) & (row["TC"] > 0) & (row["TC"] < 5)):
             if ((row["AircraftType"] not in ["No category information", "Reserved", "ERROR"]) | (row["TC"] != 1)):
                 aircraftType = row["AircraftType"]
-
-
         if pd.notna(row.get("surface_velocity")):
-            flagPrimerParado = False
-            parado = ""
-            if(row["surface_velocity"] == 0):
-                parado = "Para"
-            else:
-                parado = "No para"
-                if (flagPrimerParado):
-                    eventos_provisional[0]["ultimo_parado"] = row["timestamp"]
+            if (flagPrimerParado & len(eventos_provisional) > 0):
+                eventos_provisional[0]["ultimo_parado"] = row["timestamp"]
             hp = find_holding_point_with_buffer(row["lon"], row["lat"])
+            if((hp is None) & flagPrimerParado):
+                flagPrimerParado = False
             if ((hp is not None) & (hp not in visited_hp)):
                 visited_hp.add(hp)
                 primer_parado = row["timestamp"]
-                if(parado == "Para"):
-                    flagPrimerParado = True
+                flagPrimerParado = True
                 eventos_provisional.append({
                     "ICAO": row["ICAO"],
                     "primer_parado": primer_parado,
@@ -160,8 +154,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     "aircraft_type": aircraftType,
                     "lat": None,
                     "lon": None,
-                    "holding_point": hp,
-                    "parado": parado, 
+                    "holding_point": hp
                 })
 
         if (pd.notna(row.get("lat")) and pd.notna(row.get("lon"))):
@@ -224,7 +217,7 @@ rwy_polygon_14R_32L = Polygon([
 
 
 
-df = dd.read_csv("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/src/procesado_datos/datos_prueba_nuevo.csv", sep=",", parse_dates=["timestamp"], dtype={'AircraftType': 'object', 5: 'str'}, na_values=["", "None", "(None, None)", "(None, None, None, None)"])  # o el patrón que hayas definido
+df = dd.read_csv("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/src/procesado_datos/datos_prueba_nuevo2.csv", sep=",", parse_dates=["timestamp"], dtype={'AircraftType': 'object', 5: 'str'}, na_values=["", "None", "(None, None)", "(None, None, None, None)"])  # o el patrón que hayas definido
 
 meta = {
     "ICAO": str,
@@ -235,8 +228,7 @@ meta = {
     "aircraft_type": str,
     "lat": "float64",
     "lon": "float64",
-    "holding_point": str,
-    "parado": str
+    "holding_point": str
 }
 
 with ProgressBar():
@@ -259,4 +251,4 @@ print("Estadísticas de tiempo de espera (en segundos) por hora de despegue:")
 print(estadisticas_por_dia_hora)
 
 with ProgressBar():
-    eventos_espera.to_csv('test_nuevo.csv', index=False)
+    eventos_espera.to_csv('test_nuevo2.csv', index=False)
