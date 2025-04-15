@@ -110,7 +110,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
                     "holding_point": hp,
                     "parado": parado
                 })
-            elif len(eventos_provisional) > 0:
+            if len(eventos_provisional) > 0:
                 if (
                     (hp is None or hp != eventos_provisional[-1]["holding_point"])
                     and eventos_provisional[-1]["salida_punto"] is None
