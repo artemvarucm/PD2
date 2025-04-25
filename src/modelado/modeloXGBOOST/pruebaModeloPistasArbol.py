@@ -48,12 +48,12 @@ dtrain = xgb.DMatrix(X_train_proc, label=y_train)
 dvalid = xgb.DMatrix(X_test_proc,  label=y_test)
 params = {
     'objective':   'reg:squarederror',
-    'max_depth':   12,
+    'max_depth':   9,
     'eta':         0.05,
     'seed':        42,
     'eval_metric': 'mae'
 }
-bst = xgb.train(params, dtrain, num_boost_round=3500, evals=[(dtrain,'train'),(dvalid,'valid')], early_stopping_rounds=20, verbose_eval=True)
+bst = xgb.train(params, dtrain, num_boost_round=3000, evals=[(dtrain,'train'),(dvalid,'valid')], early_stopping_rounds=20, verbose_eval=True)
 
 joblib.dump(preprocessor, 'preprocessor.joblib')
 
