@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from wandb.integration.keras import WandbMetricsLogger
 from wandb.integration.keras import WandbModelCheckpoint
 import numpy as np
-
+from wandb.plot.custom_chart import plot_table
 
 class MonitorTensorflow(MonitorGeneral):
     def __init__(self, modelo, data, y, num_epochs, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid'):
@@ -123,10 +123,12 @@ class MonitorTensorflow(MonitorGeneral):
         """
         Crea un histograma comparando las distribuciones de predicciones y valores reales.
         """
+        tabla = wandb.Table(data=[[v] for v in [0,0,0,1,2]], columns=["valor"])
+        wandb.log({"Prediction Histogram": wandb.plot_table(data_table=tabla, vega_spec_name="histograma bueno", fields=["valor"])})
+        
         # Crear la tabla con una columna de valores y otra de tipo (real o predicción)
         tabla_reales = wandb.Table(data=[[v] for v in real_values], columns=["valor"])
         tabla_predicciones = wandb.Table(data=[[v] for v in predictions], columns=["valor"])
-
         # Loguear el histograma con distinción de tipos
         wandb.log({
             "Distribución de valores reales": wandb.plot.histogram(tabla_reales, "valor", title="Distribución de valores reales"),
