@@ -133,13 +133,13 @@ meta = {
 
 
 # Cargar el geojson de holding points (en CRS WGS84)
-holding_points = gpd.read_file("../../data/geojson/holding_points.geojson")
+holding_points = gpd.read_file("data/geojson/holding_points.geojson")
 
 # Reproyectar a un CRS métrico (por ejemplo, UTM 30N; usa el EPSG adecuado para tu zona)
 holding_points_utm = holding_points.to_crs(epsg=32630)
 
-# Crear un buffer de 50 metros alrededor de cada holding point
-holding_points_utm['buffer'] = holding_points_utm.buffer(50)
+# Crear un buffer de 25 metros alrededor de cada holding point
+holding_points_utm['buffer'] = holding_points_utm.buffer(25)
 
 # Crear un transformer para convertir puntos de WGS84 (EPSG:4326) a UTM (EPSG:32630)
 transformer = Transformer.from_crs("EPSG:4326", "EPSG:32630", always_xy=True)
@@ -282,20 +282,15 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
 
 
 
-# Sube desde preprocesadoJunto.py hasta "Universidad/"
-universidad_path = Path(__file__).resolve().parents[5]
-salida_path = Path(__file__).resolve().parents[2]
-
-# Llega a "datapd2/Raw"
-base_raw_path = universidad_path / "datapd2" / "Raw"
-base_output_path = salida_path / "data" / "Preprocessed"
-
+base_raw_path = '/Users/user1/Downloads'
+base_output_path = "./preprocessed"
+year = 2025
 for month in [1]:
     for day in range(1, 32):
         dfs_del_dia = []
 
         for hour in range(24):
-            path = base_raw_path / f"{month:02d}" / f"{day:02d}" / f"{hour:02d}"
+            path = Path(f"{base_raw_path}/{year}/{month:02d}/{day:02d}/{hour:02d}")
             print(f"Revisando: {path}")
 
             if os.path.exists(path):
@@ -357,9 +352,9 @@ for month in [1]:
                 with ProgressBar():
                     eventos_espera = eventos_espera.compute()
 
-                pathFinal = base_output_path / f"{month:02d}" / f"{day:02d}"
+                pathFinal = Path(f"{base_output_path}/{month:02d}/{day:02d}")
                 os.makedirs(pathFinal, exist_ok=True)
 
                 nombre_archivo = f"{day}-{month}"
 
-                eventos_espera.to_parquet(pathFinal / nombre_archivo)
+                eventos_espera.to_parquet(Path(f"{base_output_path}/{month:02d}/{day:02d}/{nombre_archivo}"))
