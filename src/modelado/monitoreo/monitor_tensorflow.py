@@ -124,7 +124,7 @@ class MonitorTensorflow(MonitorGeneral):
         Crea un histograma comparando las distribuciones de predicciones y valores reales.
         """
         tabla = wandb.Table(data=[[v] for v in [0,0,0,1,2]], columns=["valor"])
-        wandb.log({"Prediction Histogram": wandb.plot_table(data_table=tabla, vega_spec_name="histograma bueno", fields=["valor"])})
+        wandb.log({"Prediction Histogram prueba 4": wandb.plot_table(data_table=tabla, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])})
         
         # Crear la tabla con una columna de valores y otra de tipo (real o predicción)
         tabla_reales = wandb.Table(data=[[v] for v in real_values], columns=["valor"])
