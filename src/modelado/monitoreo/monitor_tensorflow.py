@@ -1,8 +1,11 @@
 import wandb
 from monitor_general import MonitorGeneral
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from wandb.integration.keras import WandbMetricsLogger
 from wandb.integration.keras import WandbModelCheckpoint
+import numpy as np
+
 
 class MonitorTensorflow(MonitorGeneral):
     def __init__(self, modelo, data, y, num_epochs, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid'):
@@ -28,7 +31,7 @@ class MonitorTensorflow(MonitorGeneral):
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
         """                  
-        tabla_metricas = self.buildTable(resultados_metricas, metricas=metricas, train=train, groupby=groupby, name=name)
+        tabla_metricas = self.buildTableMetrics(resultados_metricas, metricas=metricas, train=train, groupby=groupby, name=name)
         
         if groupby is not None: 
             self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
@@ -48,7 +51,7 @@ class MonitorTensorflow(MonitorGeneral):
                     )
                 })
     
-    def buildTable(self, resultados_metricas, metricas, train=False, groupby=None, name="metricas"):
+    def buildTableMetrics(self, resultados_metricas, metricas, train=False, groupby=None, name="metricas"):
         """
         Construye una tabla de métricas para registrar en W&B.
         :param resultados_metricas: Resultados de las métricas
@@ -82,7 +85,56 @@ class MonitorTensorflow(MonitorGeneral):
             if groupby is not None and not train:
                 return tabla_metricas
 
+    def visualizeRealvsPrediccion(self, real_values, predictions, name="Real vs Predicción"):
+        """
+        Visualiza la comparación entre los valores reales y las predicciones.
+        :param real_values: Valores reales
+        :param predictions: Predicciones del modelo
+        :param name: Nombre de la visualización
+        """
+        tabla = self.buildTable(real_values=real_values, predictions=predictions, name=name)
+        self.buildScatter(tabla_real_vs_predicciones=tabla)
+        self.buildHistogram(real_values=real_values, predictions=predictions)
     
+    def buildScatter(self, tabla_real_vs_predicciones):
+        """
+        Con outliers no funciona
+        """
+        scatter_plot = wandb.plot.scatter(tabla_real_vs_predicciones, x="valor_real", y="prediccion", title="Real vs Predicción")
+        wandb.log({"Real vs Predicción" : scatter_plot})
+
+
+    def buildTable(self, real_values, predictions, name="metricas"):
+        real_values = list(real_values)
+        predictions = list(predictions)
+        
+        ind = real_values.index(43909.516)
+        real_values.pop(ind)
+        predictions.pop(ind)
+
+        tabla = wandb.Table(columns = ["valor_real", "prediccion"])
+        for i in range(len(real_values)):
+            tabla.add_data(real_values[i], predictions[i])
+        
+        wandb.log({name: tabla})
+        return tabla
+    
+    def buildHistogram(self, real_values, predictions, bins=20):
+        """
+        Crea un histograma comparando las distribuciones de predicciones y valores reales.
+        """
+        # Crear la tabla con una columna de valores y otra de tipo (real o predicción)
+        tabla_reales = wandb.Table(data=[[v] for v in real_values], columns=["valor"])
+        tabla_predicciones = wandb.Table(data=[[v] for v in predictions], columns=["valor"])
+
+        # Loguear el histograma con distinción de tipos
+        wandb.log({
+            "Distribución de valores reales": wandb.plot.histogram(tabla_reales, "valor", title="Distribución de valores reales"),
+            "Distribución de predicciones": wandb.plot.histogram(tabla_predicciones, "valor", title="Distribución de valores reales")
+        })
+
+
+
     def evaluate(self, groupby=None, name=None):
         """
         Evalua el modelo registra las métricas en W&B.
@@ -103,6 +155,10 @@ class MonitorTensorflow(MonitorGeneral):
 
         # Entrenar el modelo
         self.modelo.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=self.num_epochs, callbacks=[wandb_metrics_logger, wandb_model_checkpoint])
+
+        predicciones = self.modelo.predict(X_test).flatten()
+        self.visualizeRealvsPrediccion(real_values=y_test, predictions=predicciones, name=name)
+
         self.visualizeMetrics(resultados_metricas=self.modelo.history.history, metricas=list(self.modelo.history.history.keys()), train=True, groupby=None, name=name)    
 
         test_results = self.modelo.evaluate(X_test, y_test, return_dict=True)
@@ -137,10 +193,6 @@ df["despegue"] = (df["despegue"] - datetime.datetime(1970, 1, 1)).dt.total_secon
 
 df = df.drop(columns=["ICAO", "lat", "lon"])
 
-model = tf.keras.Sequential([
-    layers.Dense(64, activation='relu', input_shape=[len(df.drop(columns=["tiempo_espera"]).keys())]),
-    layers.Dense(1)
-])
 
 import tensorflow as tf
 
@@ -148,8 +200,10 @@ import tensorflow as tf
 def custom_metric_lolaso(y_true, y_pred):
     return tf.reduce_mean(tf.abs(y_true - y_pred)-tf.abs(y_true - y_pred))
 
-
-# Compilación del modelo
+model = tf.keras.Sequential([
+    layers.Dense(64, activation='relu', input_shape=[len(df.drop(columns=["tiempo_espera"]).keys())]),
+    layers.Dense(1)
+])
 model.compile(optimizer='adam',
               loss='mse',
               metrics=["mae", "mse", "msle", "cosine_similarity", custom_metric_lolaso])
@@ -158,7 +212,7 @@ model.compile(optimizer='adam',
 monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid')
 monitor_tf.evaluate(groupby="hora_despegue")
 """
-monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_general", entity='dacoleto-complutense-university-of-madrid')
+monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=2, project='tf_PD2', name="modelo_general5", entity='dacoleto-complutense-university-of-madrid')
 monitor_tf.evaluate()
 
 monitor_tf.finish()

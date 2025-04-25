@@ -59,11 +59,11 @@ class MonitorSklearn(MonitorGeneral):
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
         """
-        tabla_metricas = self.buildTable(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+        tabla_metricas = self.buildTableMetrics(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
         if groupby is not None:
             self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
 
-    def buildTable(self, resultados_metricas, metricas, groupby=None, name="metricas"):
+    def buildTableMetrics(self, resultados_metricas, metricas, groupby=None, name="metricas"):
         """
         Construye una tabla de métricas para registrar en W&B.
         :param resultados_metricas: Resultados de las métricas
@@ -104,6 +104,12 @@ class MonitorSklearn(MonitorGeneral):
         """
         Con outliers no funciona
         """
+        table = self.buildTable(real_values=real_values, predictions=predictions, name=name)
+        scatter_plot = wandb.plot.scatter(table, x="valor_real", y="prediccion", title=name)
+        wandb.log({name : scatter_plot})
+
+
+    def buildTable(self, real_values, predictions,groupby=None, name="metricas"):
         real_values = list(real_values)
         predictions = list(predictions)
         """
@@ -114,9 +120,8 @@ class MonitorSklearn(MonitorGeneral):
         table = wandb.Table(columns = ["valor_real", "prediccion"])
         for i in range(len(real_values)):
             table.add_data(real_values[i], predictions[i])
-
-        scatter_plot = wandb.plot.scatter(table, x="valor_real", y="prediccion", title=name)
-        wandb.log({name : scatter_plot})
+        
+        return table
     
     def evaluate(self, groupby=None, name=None):
         """

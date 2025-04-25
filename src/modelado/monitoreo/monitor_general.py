@@ -34,7 +34,7 @@ class MonitorGeneral(ABC):
         pass
 
     @abstractmethod
-    def buildTable(self, *args):
+    def buildTableMetrics(self, *args):
         """Método abstracto para construir una tabla de métricas"""
         pass
 

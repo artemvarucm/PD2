@@ -45,12 +45,12 @@ class MonitorSpark(MonitorGeneral):
         :param name: Nombre de la visualización de métricas
         """
                                 
-        tabla_metricas = self.buildTable(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+        tabla_metricas = self.buildTableMetrics(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
         
         if groupby is not None: 
             self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
 
-    def buildTable(self, resultados_metricas, metricas, groupby=None, name="metricas"):
+    def buildTableMetrics(self, resultados_metricas, metricas, groupby=None, name="metricas"):
         """
         Construye una tabla de métricas para registrar en W&B.
         :param resultados_metricas: Resultados de las métricas
@@ -88,6 +88,29 @@ class MonitorSpark(MonitorGeneral):
                     )
                 })
 
+    def buildScatter(self, real_values, predictions, name=f"Real vs Predicción"):
+        """
+        Con outliers no funciona
+        """
+        table = self.buildTable(real_values=real_values, predictions=predictions, name=name)
+        scatter_plot = wandb.plot.scatter(table, x="valor_real", y="prediccion", title=name)
+        wandb.log({name : scatter_plot})
+
+
+    def buildTable(self, real_values, predictions,groupby=None, name="metricas"):
+        real_values = list(real_values)
+        predictions = list(predictions)
+        """
+        ind = real_values.index(43909.516)
+        real_values.pop(ind)
+        predictions.pop(ind)"""
+
+        table = wandb.Table(columns = ["valor_real", "prediccion"])
+        for i in range(len(real_values)):
+            table.add_data(real_values[i], predictions[i])
+        
+        return table
+    
     def calculateMetrics(self, test_results, metricas):
         """
         Calcula las métricas de regresión y las registra en W&B.
@@ -120,6 +143,11 @@ class MonitorSpark(MonitorGeneral):
         metricas = self.METRICAS_REGRESION if self.regression else self.METRICAS_CLASIFICACION
 
         test_results = self.pipeline_model.transform(test_data)
+        
+        real_values = test_results.select(self.y).collect()
+        predictions = test_results.select("prediction").collect()
+        self.buildScatter(real_values=real_values, predictions=predictions)
+
         resultados_metricas = self.calculateMetrics(test_results=test_results, metricas=metricas)
         self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=None, name=name)
 
