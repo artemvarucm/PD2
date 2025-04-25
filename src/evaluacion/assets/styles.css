@@ -1,0 +1,402 @@
+/* Estilos generales */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f7f7f7;
+}
+
+/* Estilos para el header */
+h1 {
+    padding: 20px;
+    margin: 0;
+    background-color: #4e73df;
+    color: white !important;
+    text-align: center;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para los contenedores */
+.stats-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin: 20px;
+    padding: 10px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para las cajas de estadísticas */
+.stat-box {
+    flex: 1;
+    min-width: 150px;
+    margin: 10px;
+    padding: 15px;
+    text-align: center;
+    background-color: #f8f9fc;
+    border-left: 4px solid #4e73df;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+}
+
+.stat-box:hover {
+    transform: translateY(-5px);
+}
+
+.stat-box h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #4e73df;
+    text-transform: uppercase;
+}
+
+.stat-box p {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: #5a5c69;
+}
+
+/* Estilos para los controles de filtro */
+.Select-control {
+    border-radius: 4px;
+    border: 1px solid #e3e6f0;
+}
+
+.Select-menu-outer {
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para los gráficos */
+.js-plotly-plot {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+    padding: 10px;
+    transition: transform 0.3s ease;
+}
+
+.js-plotly-plot:hover {
+    transform: scale(1.01);
+}
+
+/* Estilos para los contenedores de gráficos */
+.graph-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+    padding: 10px;
+    transition: transform 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.graph-container:hover {
+    transform: scale(1.01);
+}
+
+/* Estilos para el encabezado de gráficos */
+.graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e3e6f0;
+    margin-bottom: 10px;
+}
+
+.graph-title {
+    margin: 0;
+    color: #5a5c69;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Botón de ampliación */
+.btn-expand {
+    background-color: #4e73df;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-expand:hover {
+    background-color: #2e59d9;
+}
+
+/* Estilos para etiquetas y selectores */
+label {
+    font-weight: 600;
+    color: #4e73df;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Estilos para los dropdowns */
+.Select-placeholder, .Select--single > .Select-control .Select-value {
+    color: #6e707e;
+}
+
+/* Estilos para el modal */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.7);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background-color: white;
+    margin: 2% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 95%;
+    max-width: 1500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    position: relative;
+    animation: slideIn 0.4s ease;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    color: #4e73df;
+    font-size: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10;
+    transition: color 0.3s;
+}
+
+.close-btn:hover {
+    color: #d9534f;
+}
+
+/* Título del modal */
+#modal-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #4e73df;
+    font-size: 24px;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e3e6f0;
+}
+
+/* Estructura flexible para el modal */
+.modal-flex-container {
+    display: flex;
+    gap: 20px;
+    height: 80vh;
+}
+
+/* Panel lateral de filtros */
+.filter-panel {
+    width: 250px;
+    background-color: #f8f9fc;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+.filter-panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.filter-title {
+    margin: 0 0 15px 0;
+    color: #4e73df;
+    font-size: 18px;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.filter-section {
+    margin-bottom: 15px;
+}
+
+/* Panel del gráfico */
+.graph-panel {
+    flex: 1;
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+}
+
+/* Estilos para las métricas de predicción */
+.prediction-stats {
+    padding: 10px;
+    background-color: white;
+    border-radius: 8px;
+}
+
+.metrics-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.prediction-metric {
+    background-color: #f8f9fc;
+    border-radius: 6px;
+    padding: 10px;
+    flex: 1;
+    min-width: 100px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.prediction-metric.wide {
+    flex-basis: 100%;
+}
+
+.prediction-metric h5 {
+    margin: 0 0 5px 0;
+    font-size: 13px;
+    color: #5a5c69;
+}
+
+.metric-value {
+    margin: 0;
+    font-size: 16px;
+    font-weight: bold;
+    color: #4e73df;
+}
+
+.metric-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.metric-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: white;
+    font-weight: bold;
+}
+
+/* Botones de análisis adicional */
+.analysis-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.analysis-button {
+    background-color: #f1f1f1;
+    color: #5a5c69;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.analysis-button:hover {
+    background-color: #4e73df;
+    color: white;
+    border-color: #4e73df;
+}
+
+/* Estilos para dispositivos móviles */
+@media (max-width: 1200px) {
+    .stats-container {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .stat-box {
+        min-width: calc(50% - 40px);
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+    }
+    
+    .modal-flex-container {
+        flex-direction: column;
+    }
+    
+    .filter-panel {
+        width: 100%;
+        max-height: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .stat-box {
+        min-width: calc(100% - 40px);
+    }
+    
+    .modal-content {
+        padding: 15px;
+        margin: 10% auto;
+    }
+    
+    #modal-title {
+        font-size: 20px;
+    }
+}
+
+/* Estilos para el panel de análisis adicional */
+.additional-analysis-panel {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.additional-analysis-area {
+    margin-top: 20px;
+}
+
+/* Mejorar estilos para la sección de análisis de predicción */
+.prediction-analysis-controls {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fc;
+    border-radius: 8px;
+    border-left: 4px solid #4e73df;
+} 
