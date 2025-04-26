@@ -7,6 +7,7 @@ __pycache__/
 *.tar
 # C extensions
 *.so
+preprocessed/*
 
 # Distribution / packaging
 .Python

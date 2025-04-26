@@ -142,8 +142,8 @@ out = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 # 5) Asignar runway a nulls usando holding_point → runway
 # ----------------------------
 holding_to_runway = {
-    'K1':'14L/32R','K2':'14L/32R','K3':'14L/32R','L1':'14L/32R',
-    'LA':'14R/32R','LB':'14R/32R','LC':'14R/32R','LE':'14R/32R',
+    'K1':'14L/32R','K2':'14L/32R','K3':'14L/32R',
+    'L1':'14L/32L','LA':'14R/32L','LB':'14R/32L','LC':'14R/32L','LE':'14R/32L',
     'Y1':'18L/36R','Y2':'18L/36R','Y3':'18L/36R',
     'Z1':'18R/36L','Z2':'18R/36L','Z3':'18R/36L','Z4':'18R/36L','Z6':'18R/36L'
 }
