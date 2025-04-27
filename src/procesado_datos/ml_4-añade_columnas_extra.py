@@ -1,17 +1,24 @@
-"""Este script añade 3 columnas extra a los datos sampleados de entrenamiento
-    -runway_occupied: 0 o 1, si la pista esta ocupada en el timestamp del ejemplo de entrenamiento
-    -queue_length: >= 0, aviones que estan por delante de el avion del ejemplo de entrenamiento.
-    -time_since_free: tiempo en segundos desde el último despegue
-    -hold_pt_occupied: número de puntos de espera que llevan a la misma pista y que están ocupados
-    """
+"""
+Este script añade 4 columnas extra a los datos sampleados de entrenamiento
 
-# computeRunwayOccupied.py
+1. queue_length: número de aviones, que han salido de su punto de espera 
+    (su salida_punto es menor que el timestamp del instante) pero no han despegado 
+    (su despegue también es menor que el timestamp del instante).
+    En resumen, aquellos aviones que han podido rebasar el punto de espera y están entrando en la pista.
+
+2. runway_occupied: boolean, true si queue_length > 0.
+
+3. time_since_free: tiempo en segundos desde el último despegue.
+
+4. hold_pt_occupied: número de puntos de espera que llevan a la misma pista y que están ocupados en el instante 
+    (llegada_punto menor que timestamp y salida_punto mayor que timestamp). No incluye el mismo punto del instante.
+"""
 
 import pandas as pd
 import numpy as np
 
 """
-Función para extraer los 3 features anteriormente descritos
+Función para sacar runway_occupied, queue_length y time_since_free
 
 Parameters
 ----------
@@ -50,6 +57,14 @@ def get_queue_features(row, runway_intervals, runway_despegues):
         'time_since_free':  time_since_free
     })
 
+"""
+Para sacar la variable hold_pt_occupied
+
+Parameters
+----------
+row : fila del DataFrame
+holding_intervals : dicccionario que guarda por cada pista, tiene la lista ordenada de intervalos de tiempo cuando estaba ocupada
+"""
 def get_hold_pt_occupied(row, holding_intervals):
     runway = row['runway']
     current_ts = row['timestamp']
