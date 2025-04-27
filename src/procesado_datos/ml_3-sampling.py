@@ -6,7 +6,7 @@ import pandas as pd
 
 # 1. Carga los datos desde tu CSV (ajusta la ruta y nombres de columna si es necesario)
 df = pd.read_csv(
-    'data/Train/train_enero_hasta_17(incluido).csv',
+    'data/Train/train.csv',
     sep=',',
     parse_dates=['llegada_punto', 'salida_punto', 'despegue']
 )

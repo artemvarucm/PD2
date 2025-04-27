@@ -7,7 +7,7 @@ Este archivo concatena todos los archivos procesados en un csv
 """
 
 
-base_processed_path = "./preprocessed"
+base_processed_path = "./data/Preprocessed"
 base_output_path = "./data/Train/"
 
 old_files = list(Path(base_output_path).glob("train_*.csv"))
