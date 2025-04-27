@@ -11,7 +11,7 @@ import json
 # Cargar el dataset
 # Ajusta la ruta según dónde tengas tu archivo de datos
 # Asumimos que está en la misma carpeta o especifica la ruta correcta
-df = pd.read_csv('/Users/hamzatriki/3ºProyectoDeDatos2/PD2/src/modelado/modeloXGBOOST/predicciones_xgb_with_queue.csv')
+df = pd.read_csv('predicciones_xgb_with_queue.csv')
 df['prediccion_tiempo_espera'] = df['pred']
 
 # Asegurar que la carpeta assets existe
