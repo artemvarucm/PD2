@@ -100,51 +100,23 @@ class MonitorSklearn(MonitorGeneral):
                 )
             })
 
-    def buildScatter(self, tabla_real_vs_predicciones):
-        """
-        Con outliers no funciona
-        """
-        scatter_plot = wandb.plot.scatter(tabla_real_vs_predicciones, x="valor_real", y="prediccion", title="Real vs Predicción")
-        wandb.log({"Real vs Predicción" : scatter_plot})
 
 
-    def buildTable(self, real_values, predictions,groupby=None, name="metricas"):
+    def buildTable(self, real_values, predictions, name="metricas"):
         real_values = list(real_values)
         predictions = list(predictions)
         """
         ind = real_values.index(43909.516)
         real_values.pop(ind)
-        predictions.pop(ind)"""
+        predictions.pop(ind)
+        """
 
-        table = wandb.Table(columns = ["valor_real", "prediccion"])
+        tabla = wandb.Table(columns = ["valor_real", "prediccion"])
         for i in range(len(real_values)):
-            table.add_data(real_values[i], predictions[i])
+            tabla.add_data(real_values[i], predictions[i])
         
-        return table
-    
-    def visualizeRealvsPrediccion(self, real_values, predictions, name="Real vs Predicción"):
-        """
-        Visualiza la comparación entre los valores reales y las predicciones.
-        :param real_values: Valores reales
-        :param predictions: Predicciones del modelo
-        :param name: Nombre de la visualización
-        """
-        tabla = self.buildTable(real_values=real_values, predictions=predictions, name=name)
-        self.buildScatter(tabla_real_vs_predicciones=tabla)
-        self.buildHistogram(real_values=real_values, predictions=predictions)
-    
-    def buildHistogram(self, real_values, predictions, bins=20):
-        """
-        Crea un histograma comparando las distribuciones de predicciones y valores reales.
-        """
-        # Crear la tabla con una columna de valores y otra de tipo (real o predicción)
-        tabla_reales = wandb.Table(data=[[v] for v in real_values], columns=["valor"])
-        tabla_predicciones = wandb.Table(data=[[v] for v in predictions], columns=["valor"])
-        # Loguear el histograma con distinción de tipos
-        wandb.log({
-            "Distribución de valores reales": wandb.plot_table(data_table=tabla_reales, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"]),
-            "Distribución de predicciones": wandb.plot_table(data_table=tabla_predicciones, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])
-        })
+        wandb.log({name: tabla})
+        return tabla
 
     def evaluate(self, groupby=None, name=None):
         """

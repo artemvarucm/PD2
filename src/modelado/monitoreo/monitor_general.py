@@ -43,6 +43,37 @@ class MonitorGeneral(ABC):
         """Método abstracto para construir una gráfica de métricas"""
         pass
             
+    def visualizeRealvsPrediccion(self, real_values, predictions, name="Real vs Predicción"):
+        """
+        Visualiza la comparación entre los valores reales y las predicciones.
+        :param real_values: Valores reales
+        :param predictions: Predicciones del modelo
+        :param name: Nombre de la visualización
+        """
+        tabla = self.buildTable(real_values=real_values, predictions=predictions, name=name)
+        self.buildScatter(tabla_real_vs_predicciones=tabla)
+        self.buildHistogram(real_values=real_values, predictions=predictions)
+    
+    def buildScatter(self, tabla_real_vs_predicciones):
+        """
+        Construye un gráfico de dispersión comparando los valores reales y las predicciones.
+        Con outliers no funciona
+        """
+        scatter_plot = wandb.plot.scatter(tabla_real_vs_predicciones, x="valor_real", y="prediccion", title="Real vs Predicción")
+        wandb.log({"Real vs Predicción" : scatter_plot})
+    
+    def buildHistogram(self, real_values, predictions, bins=20):
+        """
+        Crea un histograma comparando las distribuciones de predicciones y valores reales.
+        """
+        tabla_reales = wandb.Table(data=[[v] for v in real_values], columns=["valor"])
+        tabla_predicciones = wandb.Table(data=[[v] for v in predictions], columns=["valor"])
+
+        # Loguear el histograma con distinción de tipos
+        wandb.log({
+            "Distribución de valores reales": wandb.plot_table(data_table=tabla_reales, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"]),
+            "Distribución de predicciones": wandb.plot_table(data_table=tabla_predicciones, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])
+        })
 
     def finish(self):
         """Finaliza la sesión de W&B"""
