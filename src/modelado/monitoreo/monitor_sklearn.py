@@ -100,6 +100,17 @@ class MonitorSklearn(MonitorGeneral):
                 )
             })
     
+    def visualizeRealvsPrediccion(self, real_values, predictions, name="Real vs Predicción"):
+        """
+        Visualiza la comparación entre los valores reales y las predicciones.
+        :param real_values: Valores reales
+        :param predictions: Predicciones del modelo
+        :param name: Nombre de la visualización
+        """
+        tabla = self.buildTable(real_values=real_values, predictions=predictions, name=name)
+        self.buildScatter(tabla_real_vs_predicciones=tabla)
+        self.buildHistogram(real_values=real_values, predictions=predictions)
+
     def buildScatter(self, real_values, predictions, name=f"Real vs Predicción"):
         """
         Con outliers no funciona
@@ -123,6 +134,30 @@ class MonitorSklearn(MonitorGeneral):
         
         return table
     
+    def visualizeRealvsPrediccion(self, real_values, predictions, name="Real vs Predicción"):
+        """
+        Visualiza la comparación entre los valores reales y las predicciones.
+        :param real_values: Valores reales
+        :param predictions: Predicciones del modelo
+        :param name: Nombre de la visualización
+        """
+        tabla = self.buildTable(real_values=real_values, predictions=predictions, name=name)
+        self.buildScatter(tabla_real_vs_predicciones=tabla)
+        self.buildHistogram(real_values=real_values, predictions=predictions)
+    
+    def buildHistogram(self, real_values, predictions, bins=20):
+        """
+        Crea un histograma comparando las distribuciones de predicciones y valores reales.
+        """
+        # Crear la tabla con una columna de valores y otra de tipo (real o predicción)
+        tabla_reales = wandb.Table(data=[[v] for v in real_values], columns=["valor"])
+        tabla_predicciones = wandb.Table(data=[[v] for v in predictions], columns=["valor"])
+        # Loguear el histograma con distinción de tipos
+        wandb.log({
+            "Distribución de valores reales": wandb.plot_table(data_table=tabla_reales, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"]),
+            "Distribución de predicciones": wandb.plot_table(data_table=tabla_predicciones, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])
+        })
+
     def evaluate(self, groupby=None, name=None):
         """
         Evalua el modelo y registra las métricas en W&B.

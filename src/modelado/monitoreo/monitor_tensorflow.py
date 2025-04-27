@@ -107,11 +107,11 @@ class MonitorTensorflow(MonitorGeneral):
     def buildTable(self, real_values, predictions, name="metricas"):
         real_values = list(real_values)
         predictions = list(predictions)
-        
+        """
         ind = real_values.index(43909.516)
         real_values.pop(ind)
         predictions.pop(ind)
-
+        """
         tabla = wandb.Table(columns = ["valor_real", "prediccion"])
         for i in range(len(real_values)):
             tabla.add_data(real_values[i], predictions[i])
@@ -123,19 +123,13 @@ class MonitorTensorflow(MonitorGeneral):
         """
         Crea un histograma comparando las distribuciones de predicciones y valores reales.
         """
-        tabla = wandb.Table(data=[[v] for v in [0,0,0,1,2]], columns=["valor"])
-        wandb.log({"Prediction Histogram prueba 4": wandb.plot_table(data_table=tabla, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])})
-        
-        # Crear la tabla con una columna de valores y otra de tipo (real o predicción)
         tabla_reales = wandb.Table(data=[[v] for v in real_values], columns=["valor"])
         tabla_predicciones = wandb.Table(data=[[v] for v in predictions], columns=["valor"])
         # Loguear el histograma con distinción de tipos
         wandb.log({
-            "Distribución de valores reales": wandb.plot.histogram(tabla_reales, "valor", title="Distribución de valores reales"),
-            "Distribución de predicciones": wandb.plot.histogram(tabla_predicciones, "valor", title="Distribución de valores reales")
+            "Distribución de valores reales": wandb.plot_table(data_table=tabla_reales, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"]),
+            "Distribución de predicciones": wandb.plot_table(data_table=tabla_predicciones, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])
         })
-
-
 
     def evaluate(self, groupby=None, name=None):
         """
