@@ -12,6 +12,9 @@ import joblib
 # 1) Carga
 df = pd.read_parquet('../../../data/Train/datos_holding_with_runway_and_queue_nuevo_no_parados.parquet')
 
+
+print(df.columns)
+
 # 2) Filtrado
 #df = df[df['parado'] == True]
 df = df[df['tiempo_espera'] <= 500]
@@ -40,8 +43,14 @@ preprocessor = ColumnTransformer([
 ])
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
 X_train_proc = preprocessor.fit_transform(X_train)
 X_test_proc  = preprocessor.transform(X_test)
+
+# Get feature names after fitting
+feature_names_out = preprocessor.get_feature_names_out()
+X_test_proc_df = pd.DataFrame(X_test_proc, index=X_test.index, columns=feature_names_out)
+
 
 # 6) Entrena con xgb.train
 dtrain = xgb.DMatrix(X_train_proc, label=y_train)
@@ -62,11 +71,55 @@ mae = mean_absolute_error(y_test, y_pred)
 print(f'Test MAE (XGB + queue): {mae:.2f} s')
 bst.save_model('modelo_tiempo_espera_xgb_with_queue.model')
 
+# 7) Crear DataFrame final para el test set
+df_test_original = df.loc[X_test.index].copy()
+df_final_test = pd.DataFrame(index=X_test.index)
+
+# Columnas originales necesarias
+original_cols_to_keep = ['ICAO', 'llegada_punto', 'salida_punto', 'despegue', 'aircraft_type',
+                         'llegada_lon', 'llegada_lat', 'salida_lon', 'salida_lat',
+                         'holding_point', 'parado', 'fecha_despegue', 'hora_despegue']
+for col in original_cols_to_keep:
+    df_final_test[col] = df_test_original[col]
+
+# Target real, predicción y tiempo_esperando
+df_final_test['tiempo_espera'] = y_test
+df_final_test['pred'] = y_pred
+df_final_test['tiempo_esperado'] = df_test_original['time_since_free']
+
+# Columnas One-Hot Encoded (quitando prefijo 'cat__')
+ohe_cols = [col for col in feature_names_out if col.startswith('cat__')]
+rename_dict = {col: col.replace('cat__', '') for col in ohe_cols}
+df_final_test = df_final_test.join(X_test_proc_df[ohe_cols].rename(columns=rename_dict))
+
+# Añadir índice como columna y reordenar según CSV de ejemplo
+df_final_test.reset_index(inplace=True)
+
+target_cols = ['index', 'ICAO', 'llegada_punto', 'salida_punto', 'despegue', 'tiempo_espera', 'aircraft_type', 'llegada_lon', 'llegada_lat', 'salida_lon', 'salida_lat', 'holding_point', 'parado', 'fecha_despegue', 'hora_despegue', 'aircraft_type_Heavy (larger than 136000 kg)', 'aircraft_type_High vortex aircraft', 'aircraft_type_Light (less than 7000 kg)', 'aircraft_type_Medium 1 (between 7000 kg and 34000 kg)', 'aircraft_type_Medium 2 (between 34000 kg to 136000 kg)', 'holding_point_K1', 'holding_point_K2', 'holding_point_K3', 'holding_point_KA6', 'holding_point_KA8', 'holding_point_L1', 'holding_point_LA', 'holding_point_LB', 'holding_point_LC', 'holding_point_LD', 'holding_point_LE', 'holding_point_LF', 'holding_point_Y1', 'holding_point_Y2', 'holding_point_Y3', 'holding_point_Z1', 'holding_point_Z2', 'holding_point_Z3', 'holding_point_Z4', 'holding_point_Z6', 'tiempo_esperando', 'pred']
+
+# Asegurar que todas las columnas existan (rellenar con 0/False si faltan OHE)
+for col in target_cols:
+    if col not in df_final_test.columns:
+        # Podría pasar si alguna categoría OHE no está en el test set
+        df_final_test[col] = 0 # O False, dependiendo del tipo esperado
+
+df_final_test = df_final_test[target_cols]
+
+print("\nDataFrame final para test:")
+print(df_final_test.head())
+print(df_final_test.info())
+
+
+df_final_test.to_csv('../../../src/evaluacion/predicciones_xgb_with_queue.csv', index=False)
+
+
+
+# Visualización (código existente)
 import matplotlib.pyplot as plt
 y_train_pred = bst.predict(dtrain)
 y_valid_pred = bst.predict(dvalid)
 
-# 2) Scatter “real vs. predicho” en la misma gráfica
+# 2) Scatter "real vs. predicho" en la misma gráfica
 plt.figure(figsize=(8,8))
 # línea perfecta
 min_val = min(y_train.min(), y_test.min())

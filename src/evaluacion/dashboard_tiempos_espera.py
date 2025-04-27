@@ -11,7 +11,7 @@ import json
 # Cargar el dataset
 # Ajusta la ruta según dónde tengas tu archivo de datos
 # Asumimos que está en la misma carpeta o especifica la ruta correcta
-df = pd.read_csv('predicciones_modelo_tensorflow.csv')
+df = pd.read_csv('/Users/hamzatriki/3ºProyectoDeDatos2/PD2/src/modelado/modeloXGBOOST/predicciones_xgb_with_queue.csv')
 df['prediccion_tiempo_espera'] = df['pred']
 
 # Asegurar que la carpeta assets existe
@@ -605,8 +605,7 @@ def update_modal_graph(active_graph, aircraft_type, holding_point, start_date, e
                     ], className="prediction-metric"),
                     html.Div([
                         html.H5("Correlación:"),
-                        html.P(f"{correlation:.3f}", className="metric-value", 
-                              style={"color": "#4CAF50" if correlation > 0.7 else "#FF9800" if correlation > 0.4 else "#F44336"})
+                        html.P(f"{correlation:.3f}", className="metric-value")
                     ], className="prediction-metric"),
                 ], className="metrics-row"),
                 
@@ -617,9 +616,9 @@ def update_modal_graph(active_graph, aircraft_type, holding_point, start_date, e
                             html.Span(f"± 10s: {within_10s:.1f}%", className="metric-badge", 
                                      style={"backgroundColor": "#4CAF50"}),
                             html.Span(f"± 30s: {within_30s:.1f}%", className="metric-badge", 
-                                     style={"backgroundColor": "#2196F3"}),
+                                     style={"backgroundColor": "#FF9800"}),
                             html.Span(f"± 60s: {within_60s:.1f}%", className="metric-badge", 
-                                     style={"backgroundColor": "#FF9800"})
+                                     style={"backgroundColor": "#F44336"})
                         ], className="metric-badges")
                     ], className="prediction-metric wide"),
                 ], className="metrics-row"),
@@ -629,9 +628,9 @@ def update_modal_graph(active_graph, aircraft_type, holding_point, start_date, e
                         html.H5("Tendencia:"),
                         html.Div([
                             html.Span(f"Sobrestima: {overestimation:.1f}%", className="metric-badge", 
-                                     style={"backgroundColor": "#F44336" if overestimation > 60 else "#FF9800"}),
+                                     style={"backgroundColor": "#4CAF50"}),
                             html.Span(f"Subestima: {underestimation:.1f}%", className="metric-badge", 
-                                     style={"backgroundColor": "#2196F3" if underestimation > 60 else "#4CAF50"})
+                                     style={"backgroundColor": "#F44336"})
                         ], className="metric-badges")
                     ], className="prediction-metric wide")
                 ], className="metrics-row"),
@@ -679,8 +678,8 @@ def update_modal_graph(active_graph, aircraft_type, holding_point, start_date, e
                     y=[30, max_value + 30],
                     mode='lines',
                     name='+30 segundos',
-                    line=dict(color='gray', width=1, dash='dot'),
-                    opacity=0.5
+                    line=dict(color='#FF9800', width=1, dash='dot'),
+                    opacity=0.7
                 )
             )
             
@@ -690,10 +689,33 @@ def update_modal_graph(active_graph, aircraft_type, holding_point, start_date, e
                     y=[-30, max_value - 30],
                     mode='lines',
                     name='-30 segundos',
-                    line=dict(color='gray', width=1, dash='dot'),
-                    opacity=0.5,
+                    line=dict(color='#FF9800', width=1, dash='dot'),
+                    opacity=0.7,
                     fill='tonexty',
-                    fillcolor='rgba(173, 216, 230, 0.2)'
+                    fillcolor='rgba(255, 248, 225, 0.2)'  # Light yellow transparent fill
+                )
+            )
+            
+            # Añadir área de confianza de ±60 segundos
+            fig.add_trace(
+                go.Scatter(
+                    x=[0, max_value],
+                    y=[60, max_value + 60],
+                    mode='lines',
+                    name='+60 segundos',
+                    line=dict(color='#F44336', width=1, dash='dot'),
+                    opacity=0.7
+                )
+            )
+            
+            fig.add_trace(
+                go.Scatter(
+                    x=[0, max_value],
+                    y=[-60, max_value - 60],
+                    mode='lines',
+                    name='-60 segundos',
+                    line=dict(color='#F44336', width=1, dash='dot'),
+                    opacity=0.7
                 )
             )
             
@@ -776,11 +798,14 @@ def update_additional_analysis(error_clicks, hide_clicks, time_clicks, residuals
                 'count': len(x),
             })
         ).reset_index()
-        
+
+        # Ordenar por error (mae) en orden descendente
+        error_by_aircraft = error_by_aircraft.sort_values('mae', ascending=False)
+
         # Calcular error por holding point
         holding_cols = [col for col in filtered_df.columns if col.startswith('holding_point_')]
         error_by_holding = []
-        
+
         for col in holding_cols:
             point_name = col.replace('holding_point_', '')
             df_subset = filtered_df[filtered_df[col] == 1]
@@ -791,8 +816,12 @@ def update_additional_analysis(error_clicks, hide_clicks, time_clicks, residuals
                     'mae': mae,
                     'count': len(df_subset)
                 })
-        
+
         error_by_holding = pd.DataFrame(error_by_holding)
+
+        # Ordenar por error (mae) en orden descendente
+        if len(error_by_holding) > 0:
+            error_by_holding = error_by_holding.sort_values('mae', ascending=False)
         
         # Crear dos gráficos: error por tipo de aeronave y error por holding point
         fig1 = px.bar(
@@ -1517,15 +1546,15 @@ def update_prediction_comparison(aircraft_type, holding_point, start_date, end_d
             )
         )
         
-        # Añadir márgenes de error de ±30 segundos
+        # Añadir área de confianza de ±30 segundos
         fig.add_trace(
             go.Scatter(
                 x=[0, max_value],
                 y=[30, max_value + 30],
                 mode='lines',
                 name='+30 segundos',
-                line=dict(color='gray', width=1, dash='dot'),
-                opacity=0.5
+                line=dict(color='#FF9800', width=1, dash='dot'),
+                opacity=0.7
             )
         )
         
@@ -1535,10 +1564,33 @@ def update_prediction_comparison(aircraft_type, holding_point, start_date, end_d
                 y=[-30, max_value - 30],
                 mode='lines',
                 name='-30 segundos',
-                line=dict(color='gray', width=1, dash='dot'),
-                opacity=0.5,
+                line=dict(color='#FF9800', width=1, dash='dot'),
+                opacity=0.7,
                 fill='tonexty',
-                fillcolor='rgba(173, 216, 230, 0.2)'
+                fillcolor='rgba(255, 248, 225, 0.2)'  # Light yellow transparent fill
+            )
+        )
+        
+        # Añadir área de confianza de ±60 segundos
+        fig.add_trace(
+            go.Scatter(
+                x=[0, max_value],
+                y=[60, max_value + 60],
+                mode='lines',
+                name='+60 segundos',
+                line=dict(color='#F44336', width=1, dash='dot'),
+                opacity=0.7
+            )
+        )
+        
+        fig.add_trace(
+            go.Scatter(
+                x=[0, max_value],
+                y=[-60, max_value - 60],
+                mode='lines',
+                name='-60 segundos',
+                line=dict(color='#F44336', width=1, dash='dot'),
+                opacity=0.7
             )
         )
         
