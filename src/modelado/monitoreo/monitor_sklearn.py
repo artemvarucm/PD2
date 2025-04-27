@@ -99,25 +99,13 @@ class MonitorSklearn(MonitorGeneral):
                     tabla_metricas, groupby, metrica, title=metrica
                 )
             })
-    
-    def visualizeRealvsPrediccion(self, real_values, predictions, name="Real vs Predicción"):
-        """
-        Visualiza la comparación entre los valores reales y las predicciones.
-        :param real_values: Valores reales
-        :param predictions: Predicciones del modelo
-        :param name: Nombre de la visualización
-        """
-        tabla = self.buildTable(real_values=real_values, predictions=predictions, name=name)
-        self.buildScatter(tabla_real_vs_predicciones=tabla)
-        self.buildHistogram(real_values=real_values, predictions=predictions)
 
-    def buildScatter(self, real_values, predictions, name=f"Real vs Predicción"):
+    def buildScatter(self, tabla_real_vs_predicciones):
         """
         Con outliers no funciona
         """
-        table = self.buildTable(real_values=real_values, predictions=predictions, name=name)
-        scatter_plot = wandb.plot.scatter(table, x="valor_real", y="prediccion", title=name)
-        wandb.log({name : scatter_plot})
+        scatter_plot = wandb.plot.scatter(tabla_real_vs_predicciones, x="valor_real", y="prediccion", title="Real vs Predicción")
+        wandb.log({"Real vs Predicción" : scatter_plot})
 
 
     def buildTable(self, real_values, predictions,groupby=None, name="metricas"):
@@ -175,7 +163,7 @@ class MonitorSklearn(MonitorGeneral):
         self.modelo.fit(X_train, y_train)
         y_pred = self.modelo.predict(X_test)
 
-        self.buildScatter(real_values=y_test, predictions=y_pred)
+        self.visualizeRealvsPrediccion(real_values=y_test, predictions=y_pred, name=name)
 
         metricas = self.METRICAS_REGRESION if self.regresion else self.METRICAS_CLASIFICACION
         resultados_metricas = self.calculateMetrics(y_true=y_test, y_pred=y_pred, metricas=metricas)

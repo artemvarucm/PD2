@@ -127,8 +127,8 @@ class MonitorTensorflow(MonitorGeneral):
         tabla_predicciones = wandb.Table(data=[[v] for v in predictions], columns=["valor"])
         # Loguear el histograma con distinción de tipos
         wandb.log({
-            "Distribución de valores reales": wandb.plot_table(data_table=tabla_reales, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"]),
-            "Distribución de predicciones": wandb.plot_table(data_table=tabla_predicciones, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])
+            "Distribución de valores reales": wandb.plot_table(data_table=tabla_reales, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"], title="Distribución de valores reales"),
+            "Distribución de predicciones": wandb.plot_table(data_table=tabla_predicciones, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"], title="Distribución de predicciones")
         })
 
     def evaluate(self, groupby=None, name=None):
