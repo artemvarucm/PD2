@@ -194,14 +194,18 @@ app.layout = html.Div([
                                     style={'width': '100%'}
                                 ),
                             ], className="filter-section"),
-                            
-                            # Para cuando se esté viendo el análisis de predicción vs real
-                            html.Div([
-                                html.Div(id="modal-stats-prediction", className="prediction-stats"),
+                        ], className="filter-panel-content")
+                    ], className="filter-panel"),
+                    
+                    # Área del gráfico
+                    html.Div([
+                        html.Div(id="modal-stats-prediction", className="prediction-stats"),
+                        html.Div([
                                 # Añadir los botones directamente en el layout inicial
                                 html.Div([
                                     html.H5("Análisis Adicionales:", style={"marginTop": "15px"}),
                                     html.Div([
+                                        html.Button("Ocultar", id="btn-advanced-hide", className="analysis-button"),
                                         html.Button("Por Categoría de Error", id="btn-error-analysis", className="analysis-button"),
                                         html.Button("Por Tiempo del Día", id="btn-time-analysis", className="analysis-button"),
                                         html.Button("Residuales", id="btn-residuals", className="analysis-button")
@@ -209,12 +213,7 @@ app.layout = html.Div([
                                 ], className="prediction-analysis-controls"),
                                 # Área para gráficos adicionales
                                 html.Div(id="additional-analysis-area", className="additional-analysis-area")
-                            ], id="prediction-analysis-container", style={"display": "none"})
-                        ], className="filter-panel-content")
-                    ], className="filter-panel"),
-                    
-                    # Área del gráfico
-                    html.Div([
+                            ], id="prediction-analysis-container", style={"display": "none"}),
                         dcc.Graph(id='modal-graph', style={'height': '75vh'})
                     ], className="graph-panel"),
                 ], className="modal-flex-container"),
@@ -638,19 +637,6 @@ def update_modal_graph(active_graph, aircraft_type, holding_point, start_date, e
                 ], className="metrics-row"),
                 
                 html.Hr(style={"margin": "15px 0"}),
-                
-                # Botones para cambiar la visualización
-                html.Div([
-                    html.H5("Análisis Adicionales:"),
-                    html.Div([
-                        html.Button("Por Categoría de Error", id="btn-error-analysis", className="analysis-button"),
-                        html.Button("Por Tiempo del Día", id="btn-time-analysis", className="analysis-button"),
-                        html.Button("Residuales", id="btn-residuals", className="analysis-button")
-                    ], className="analysis-buttons")
-                ], className="prediction-metric wide"),
-                
-                # Área para gráficos adicionales
-                html.Div(id="additional-analysis-area")
             ]
             
             # Crear gráfico principal de dispersión mejorado
@@ -752,6 +738,7 @@ def update_modal_graph(active_graph, aircraft_type, holding_point, start_date, e
 @callback(
     Output('additional-analysis-area', 'children'),
     [Input('btn-error-analysis', 'n_clicks'),
+     Input('btn-advanced-hide', 'n_clicks'),
      Input('btn-time-analysis', 'n_clicks'),
      Input('btn-residuals', 'n_clicks')],
     [State('modal-aircraft-type-dropdown', 'value'),
@@ -759,7 +746,7 @@ def update_modal_graph(active_graph, aircraft_type, holding_point, start_date, e
      State('modal-date-range-picker', 'start_date'),
      State('modal-date-range-picker', 'end_date')]
 )
-def update_additional_analysis(error_clicks, time_clicks, residuals_clicks, aircraft_type, holding_point, start_date, end_date):
+def update_additional_analysis(error_clicks, hide_clicks, time_clicks, residuals_clicks, aircraft_type, holding_point, start_date, end_date):
     # Verificar qué botón fue clickeado
     triggered = ctx.triggered_id
     
@@ -775,6 +762,8 @@ def update_additional_analysis(error_clicks, time_clicks, residuals_clicks, airc
     if 'prediccion_tiempo_espera' not in filtered_df.columns:
         return html.Div("No hay datos de predicción disponibles para análisis adicional", style={"color": "red", "marginTop": "15px"})
     
+    if triggered == 'advanced-hide':
+        return None
     # Crear análisis según el botón presionado
     if triggered == 'btn-error-analysis':
         # Análisis de error por categoría 
@@ -1571,4 +1560,4 @@ def update_prediction_comparison(aircraft_type, holding_point, start_date, end_d
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=True) 
+    app.run_server(debug=False) 
