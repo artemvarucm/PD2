@@ -34,4 +34,6 @@ dependencies = [
     "tqdm>=4.67.1",
     "xgboost>=3.0.0",
     "joblib>=1.4.2",
+    "jax>=0.4.34",
+    "numpyro>=0.18.0",
 ]
