@@ -82,11 +82,11 @@ class MonitorSpark(MonitorGeneral):
         :param name: Nombre de la visualización de métricas
         """
         for metrica in metricas:
-                wandb.log({
-                    f"{name}_{metrica}": wandb.plot.bar(
-                        tabla_metricas, groupby, metrica, title=metrica
-                    )
-                })
+            wandb.log({
+                f"{name}_{metrica}": wandb.plot.bar(
+                    tabla_metricas, groupby, metrica, title=metrica
+                )
+            })
 
     def buildScatter(self, real_values, predictions, name=f"Real vs Predicción"):
         """

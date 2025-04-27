@@ -99,30 +99,25 @@ class MonitorSklearn(MonitorGeneral):
                     tabla_metricas, groupby, metrica, title=metrica
                 )
             })
-    
-    def buildScatter(self, real_values, predictions, name=f"Real vs Predicción"):
-        """
-        Con outliers no funciona
-        """
-        table = self.buildTable(real_values=real_values, predictions=predictions, name=name)
-        scatter_plot = wandb.plot.scatter(table, x="valor_real", y="prediccion", title=name)
-        wandb.log({name : scatter_plot})
 
 
-    def buildTable(self, real_values, predictions,groupby=None, name="metricas"):
+
+    def buildTable(self, real_values, predictions, name="metricas"):
         real_values = list(real_values)
         predictions = list(predictions)
         """
         ind = real_values.index(43909.516)
         real_values.pop(ind)
-        predictions.pop(ind)"""
+        predictions.pop(ind)
+        """
 
-        table = wandb.Table(columns = ["valor_real", "prediccion"])
+        tabla = wandb.Table(columns = ["valor_real", "prediccion"])
         for i in range(len(real_values)):
-            table.add_data(real_values[i], predictions[i])
+            tabla.add_data(real_values[i], predictions[i])
         
-        return table
-    
+        wandb.log({name: tabla})
+        return tabla
+
     def evaluate(self, groupby=None, name=None):
         """
         Evalua el modelo y registra las métricas en W&B.
@@ -140,7 +135,7 @@ class MonitorSklearn(MonitorGeneral):
         self.modelo.fit(X_train, y_train)
         y_pred = self.modelo.predict(X_test)
 
-        self.buildScatter(real_values=y_test, predictions=y_pred)
+        self.visualizeRealvsPrediccion(real_values=y_test, predictions=y_pred, name=name)
 
         metricas = self.METRICAS_REGRESION if self.regresion else self.METRICAS_CLASIFICACION
         resultados_metricas = self.calculateMetrics(y_true=y_test, y_pred=y_pred, metricas=metricas)
