@@ -19,7 +19,7 @@ df = df[noOutliersMask]
 # Descartamos datos que digan lo contrario (son relativamente pocos)
 holding_to_runway = {
     'K1':'14L/32R','K2':'14L/32R','K3':'14L/32R',
-    'L1':'14L/32L','LA':'14R/32L','LB':'14R/32L','LC':'14R/32L','LE':'14R/32L',
+    'L1':'14R/32L','LA':'14R/32L','LB':'14R/32L','LC':'14R/32L','LE':'14R/32L',
     'Y1':'18L/36R','Y2':'18L/36R','Y3':'18L/36R',
     'Z1':'18R/36L','Z2':'18R/36L','Z3':'18R/36L','Z4':'18R/36L','Z6':'18R/36L'
 }

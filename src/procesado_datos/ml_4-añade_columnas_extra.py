@@ -2,6 +2,7 @@
     -runway_occupied: 0 o 1, si la pista esta ocupada en el timestamp del ejemplo de entrenamiento
     -queue_length: >= 0, aviones que estan por delante de el avion del ejemplo de entrenamiento.
     -time_since_free: tiempo en segundos desde el último despegue
+    -hold_pt_occupied: número de puntos de espera que llevan a la misma pista y que están ocupados
     """
 
 # computeRunwayOccupied.py
@@ -49,12 +50,35 @@ def get_queue_features(row, runway_intervals, runway_despegues):
         'time_since_free':  time_since_free
     })
 
+def get_hold_pt_occupied(row, holding_intervals):
+    runway = row['runway']
+    current_ts = row['timestamp']
+    runway_to_holding = {
+        '14L/32R': ['K1', 'K2', 'K3'],
+        '14R/32L': ['L1', 'LA', 'LB', 'LC', 'LE'],
+        '18L/36R': ['Y1', 'Y2', 'Y3'],
+        '18R/36L': ['Z1', 'Z2', 'Z3', 'Z4', 'Z6']
+    }
+
+
+    count = 0
+    for hold_pt in runway_to_holding[runway]:
+        if hold_pt != row['holding_point']:
+            intervals = holding_intervals.get(hold_pt)
+            contains = intervals.contains(current_ts) # devuelve boolean por cada intervalo, vale True si contiene el número
+            if contains.any():
+                count += 1
+
+    return pd.Series({
+        'hold_pt_occupied': count,
+    })
+
 # Función que aplica la anterior función al dataframe, previamente calculando los tiempos ocupados de la pista
 def compute_runway_occupancy(df_upsampled):
     # ml_3 devuelve datos en los que el avión que está en un punto de espera va a despegar a la pista directamente
     
     # para no usar los datos sampleados 2 veces, ya que las filas salen duplicadas (mejora rendimiento)
-    df_int_clean = df_upsampled[['salida_punto', 'despegue', 'runway']].dropna().drop_duplicates()
+    df_int_clean = df_upsampled[['llegada_punto', 'salida_punto', 'despegue', 'runway', 'holding_point']].dropna().drop_duplicates()
 
     # Diccionarios por pista
     runway_intervals = {}
@@ -68,9 +92,21 @@ def compute_runway_occupancy(df_upsampled):
         )
         # datetimes ordenados de despegue
         runway_despegues[runway] = pd.DatetimeIndex(group['despegue']).sort_values()
+    
+    # lo mismo, pero para la ocupación de puntos de espera
+    holding_intervals = {}
+    for hold_pt, group in df_int_clean.groupby('holding_point'):
+        holding_intervals[hold_pt] = pd.IntervalIndex.from_arrays(
+            group['llegada_punto'],
+            group['salida_punto'],
+            closed='both'
+        )
 
     df_upsampled[['runway_occupied','queue_length','time_since_free']] = df_upsampled.apply(
         lambda row: get_queue_features(row, runway_intervals, runway_despegues), axis=1)
+    
+    df_upsampled[['hold_pt_occupied']] = df_upsampled.apply(
+        lambda row: get_hold_pt_occupied(row, holding_intervals), axis=1)
 
     return df_upsampled
 
