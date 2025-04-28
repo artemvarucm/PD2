@@ -13,20 +13,25 @@ import joblib
 import matplotlib.pyplot as plt
 
 # 1) Carga
-df = pd.read_parquet('../../../data/Train/datos_holding_with_runway_and_queue_nuevo_no_parados.parquet')
-
-
-df = df.dropna().reset_index(drop=True)
-print(df.columns)
+df_train = pd.read_parquet('../../../data/Train/train_final.parquet')
+df_test = pd.read_parquet('../../../data/Train/test_final.parquet')
+df_train = df_train.dropna().reset_index(drop=True)
+df_test = df_test.dropna().reset_index(drop=True)
+print(df_train.columns)
 
 # 2) Filtrado
 #df = df[df['parado'] == True]
-df = df[df['tiempo_espera'] <= 500]
+df_train = df_train[df_train['tiempo_espera'] <= 500]
+df_test = df_test[df_test['tiempo_espera'] <= 500]
 
 # 3) Hora cíclica
-df['hora_decimal'] = df['timestamp'].dt.hour + df['timestamp'].dt.minute/60
-df['hora_sin']     = np.sin(2*np.pi * df['hora_decimal']/24)
-df['hora_cos']     = np.cos(2*np.pi * df['hora_decimal']/24)
+df_train['hora_decimal'] = df_train['timestamp'].dt.hour + df_train['timestamp'].dt.minute/60
+df_train['hora_sin']     = np.sin(2*np.pi * df_train['hora_decimal']/24)
+df_train['hora_cos']     = np.cos(2*np.pi * df_train['hora_decimal']/24)
+
+df_test['hora_decimal'] = df_test['timestamp'].dt.hour + df_test['timestamp'].dt.minute/60
+df_test['hora_sin']     = np.sin(2*np.pi * df_test['hora_decimal']/24)
+df_test['hora_cos']     = np.cos(2*np.pi * df_test['hora_decimal']/24)
 
 # 4) X e y
 feature_cols = [
@@ -35,8 +40,10 @@ feature_cols = [
     'runway_occupied', 'queue_length', 'time_since_free',
     'aircraft_type', 'holding_point'
 ]
-X = df[feature_cols]
-y = df['tiempo_espera']
+X_train = df_train[feature_cols]
+y_train = df_train['tiempo_espera']
+X_test = df_test[feature_cols]
+y_test = df_test['tiempo_espera']
 
 # 5) Preprocesado
 numeric_feats     = ['tiempo_esperado','llegada_lon','llegada_lat','hora_sin','hora_cos','runway_occupied','queue_length','time_since_free']
@@ -46,7 +53,6 @@ preprocessor = ColumnTransformer([
     ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical_feats)
 ])
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 X_train_proc = preprocessor.fit_transform(X_train)
 X_test_proc  = preprocessor.transform(X_test)
@@ -107,7 +113,7 @@ mae = mean_absolute_error(y_test, y_pred)
 print(f'Test MAE (TensorFlow + queue): {mae:.2f} s')
 
 # 7) Crear DataFrame final para el test set
-df_test_original = df.loc[X_test.index].copy()
+df_test_original = df_test.loc[X_test.index].copy()
 df_final_test = pd.DataFrame(index=X_test.index)
 
 # Columnas originales necesarias
