@@ -17,14 +17,14 @@ Salida:
 import pandas as pd
 import numpy as np
 # Parámetros --------------------------------------------------
-INPUT_CSV   = "outputs/scenario1preprocessed.csv"
+INPUT_CSV   = "../outputs/scenario1preprocessed.csv"
 ICAO_TARGET = "34324e"
 
 # Columnas esperadas por el modelo
 numeric_feats = [
     'tiempo_esperado', 'llegada_lon', 'llegada_lat',
     'hora_sin', 'hora_cos', 'weekday', 'is_weekend', 'queue_x_runway',
-    'runway_occupied', 'queue_length', 'time_since_free'
+    'runway_occupied', 'queue_length', 'time_since_free', 'parado', 'hold_pt_occupied'
 ]
 categorical_feats = ['aircraft_type', 'holding_point']
 all_feats = numeric_feats + categorical_feats
@@ -58,6 +58,44 @@ dep_times = {
                 .values.astype('datetime64[ns]'))
     for rwy, grp in df.groupby('runway')
 }
+
+RUNWAY_TO_HOLDING = {
+    '14L/32R': ['K1', 'K2', 'K3'],
+    '14R/32L': ['L1', 'LA', 'LB', 'LC', 'LE'],
+    '18L/36R': ['Y1', 'Y2', 'Y3'],
+    '18R/36L': ['Z1', 'Z2', 'Z3', 'Z4', 'Z6']
+}
+
+# 4b) Preparar ocupación de puntos de espera
+holding_intervals = {
+    pt: pd.IntervalIndex.from_arrays(
+            grp['llegada_punto'],
+            grp['salida_punto'],
+            closed='both'
+         )
+    for pt, grp in (
+        df[['llegada_punto','salida_punto','holding_point']]
+        .dropna()
+        .drop_duplicates()
+        .groupby('holding_point')
+    )
+}
+
+def compute_hold_pt_occupied(row, holding_intervals):
+    """
+    Cuenta cuántos puntos de espera (distintos al del propio row)
+    de la misma pista están ocupados en el instante de llegada.
+    """
+    runway = row['runway']
+    t0     = row['llegada_punto']
+    count = 0
+    for pt in RUNWAY_TO_HOLDING.get(runway, []):
+        if pt == row['holding_point']:
+            continue
+        intervals = holding_intervals.get(pt)
+        if intervals is not None and intervals.contains(t0).any():
+            count += 1
+    return count
 
 def compute_runway_queue(r0, df_events, dep_times):
     """
@@ -100,6 +138,9 @@ weekday = t0.weekday()
 is_weekend = int(weekday in [5, 6])
 queue_x_runway = runway_occupied * queue_length
 
+# 5b) Calcular hold_pt_occupied
+hold_pt_occupied = compute_hold_pt_occupied(row, holding_intervals)
+
 # 7) Crear diccionario final de features
 # --------------------------------------
 features = {
@@ -115,12 +156,14 @@ features = {
     'queue_length':      queue_length,
     'time_since_free':   time_since_free,
     'aircraft_type':     row['aircraft_type'],
-    'holding_point':     row['holding_point']
+    'holding_point':     row['holding_point'],
+    'hold_pt_occupied':  hold_pt_occupied,
+    'parado':            row['parado']
 }
 X_test = pd.DataFrame([features], columns=all_feats)
 
 # 8) Guardar CSV de features
 # ---------------------------
-OUTPUT_CSV = f"outputs/features_ICAO_{ICAO_TARGET}.csv"
+OUTPUT_CSV = f"../outputs/features_ICAO_{ICAO_TARGET}.csv"
 X_test.to_csv(OUTPUT_CSV, index=False)
 print(f"Features guardados en {OUTPUT_CSV}")
