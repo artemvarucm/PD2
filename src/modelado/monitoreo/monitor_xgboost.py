@@ -12,7 +12,7 @@ class MonitorXGBOOST(MonitorGeneral):
     METRICAS_REGRESION = ['rmse', 'mse', 'mae', 'r2']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
-    def __init__(self, modelo, train, test, y, regresion=True, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid'):
+    def __init__(self, params, train, val, test, y,  modelo=None, regresion=True, num_boost_round=2500, early_stopping_rounds=20, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid'):
         """
         Inicializa el monitor para modelos de scikit-learn.
         :param modelo: Modelo de machine learning a monitorizar
@@ -23,9 +23,16 @@ class MonitorXGBOOST(MonitorGeneral):
         :param project: Nombre del proyecto en W&B
         :param name: Nombre del experimento
         :param entity: Nombre de la entidad en W&B
+        :param params: Parámetros del modelo
+        :param num_boost_round: Número de rondas de boosting
+
         """
         super().__init__(modelo=modelo, train=train, test=test, y=y, project=project, name=name, entity=entity)
+        self.val = val
         self.regresion = regresion
+        self.params = params
+        self.num_boost_round = num_boost_round
+        self.early_stopping_rounds = early_stopping_rounds
 
     def calculateMetrics(self, y_true, y_pred, metricas):
         """
@@ -127,15 +134,17 @@ class MonitorXGBOOST(MonitorGeneral):
         if name is None:
             name = self.name
 
-        X_train = self.train.drop(columns=[self.y])
         y_train = self.train[self.y]
+        y_val   = self.val[self.y]
+        y_test = self.test[self.y]  
 
-        X_test = self.test.drop(columns=[self.y])  # Cambio aquí
-        y_test = self.test[self.y]  # Cambio aquí
+        dtrain = xgb.DMatrix(self.train, label=y_train)
+        dval   = xgb.DMatrix(self.val,   label=y_val)
+        dtest  = xgb.DMatrix(self.test,  label=y_test)
+        
+        self.modelo = xgb.train(self.params, dtrain, num_boost_round=self.num_boost_round, evals=[(dtrain,'train'),(dval,'valid')], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=True)
 
-        self.modelo.fit(X_train, y_train)
-
-        y_pred = self.modelo.predict(X_test)
+        y_pred = self.modelo.predict(dtest)
 
         self.visualizeRealvsPrediccion(real_values=y_test, predictions=y_pred, name=name)
 
@@ -146,7 +155,7 @@ class MonitorXGBOOST(MonitorGeneral):
 
         if groupby is not None:
             resultados_metricas = dict()
-            grupos = X_test.groupby([groupby], sort=True)
+            grupos = self.test.groupby([groupby], sort=True)
             for valor_agrupar, X_grupo_test in grupos:
                 y_g_test = y_test.filter(items=X_grupo_test.index, axis=0)
                 y_g_pred = self.modelo.predict(X_grupo_test)
@@ -182,80 +191,71 @@ from sklearn.model_selection import train_test_split, KFold, RandomizedSearchCV,
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error
-import joblib
+import xgboost as xgb
 
-# 1) Carga y filtrado
-df_train = pd.read_parquet(
-    './data/Train/train_final.parquet'
-)
+
+df_train = pd.read_parquet('./data/Train/train_final.parquet')
 df_test = pd.read_parquet('./data/Train/test_final.parquet')
 
+print(df_train.columns)
+
+# 2) Filtrado
+#df = df[df['parado'] == True]
 df_train = df_train[df_train['tiempo_espera'] <= 500]
 df_test = df_test[df_test['tiempo_espera'] <= 500]
 
-# 2) Ingeniería de features
-# Hora cíclica
-df_train['hora_decimal'] = df_train['timestamp'].dt.hour + df_train['timestamp'].dt.minute / 60
-df_train['hora_sin']     = np.sin(2 * np.pi * df_train['hora_decimal'] / 24)
-df_train['hora_cos']     = np.cos(2 * np.pi * df_train['hora_decimal'] / 24)
-
+# 3) Hora cíclica
+df_train['hora_decimal'] = df_train['timestamp'].dt.hour + df_train['timestamp'].dt.minute/60
+df_train['hora_sin']     = np.sin(2*np.pi * df_train['hora_decimal']/24)
+df_train['hora_cos']     = np.cos(2*np.pi * df_train['hora_decimal']/24)
 
 df_test['hora_decimal'] = df_test['timestamp'].dt.hour + df_test['timestamp'].dt.minute/60
 df_test['hora_sin']     = np.sin(2*np.pi * df_test['hora_decimal']/24)
 df_test['hora_cos']     = np.cos(2*np.pi * df_test['hora_decimal']/24)
 
-# Día de la semana y fin de semana
-df_train['weekday'] = df_train['timestamp'].dt.weekday
-df_train['is_weekend'] = df_train['weekday'].isin([5, 6]).astype(int)
-# Interacción simple
-df_train['queue_x_runway'] = df_train['queue_length'] * df_train['runway_occupied']
+df_train_main, df_val = train_test_split(
+    df_train,
+    test_size=0.2,
+    random_state=42
+)
 
-# Día de la semana y fin de semana
-df_test['weekday'] = df_test['timestamp'].dt.weekday
-df_test['is_weekend'] = df_test['weekday'].isin([5, 6]).astype(int)
-# Interacción simple
-df_test['queue_x_runway'] = df_test['queue_length'] * df_test['runway_occupied']
-
-# 3) Definición de X e y (log-transform del target)
+# 4) X e y
 feature_cols = [
     'tiempo_esperado', 'llegada_lon', 'llegada_lat',
-    'hora_sin', 'hora_cos', 'weekday', 'is_weekend', 'queue_x_runway',
+    'hora_sin', 'hora_cos',
     'runway_occupied', 'queue_length', 'time_since_free',
-    'aircraft_type', 'holding_point', 'parado', 'hold_pt_occupied'
+    'aircraft_type', 'holding_point', 'hold_pt_occupied'
 ]
+X_train = df_train_main[feature_cols]
+y_train = df_train_main['tiempo_espera']
 
-# renombramos
-X_train = df_train[feature_cols]
-y_train = df_train['tiempo_espera']
-y_train_log = np.log1p(y_train)
+X_val = df_val[feature_cols]
+y_val = df_val['tiempo_espera']
 
-# definimos X_test / y_test_log
 X_test = df_test[feature_cols]
 y_test = df_test['tiempo_espera']
-y_test_log = np.log1p(y_test)
 
 # 5) Preprocesado
-dnumeric = [c for c in feature_cols if c not in ['aircraft_type', 'holding_point']]
-dcat     = ['aircraft_type', 'holding_point']
+numeric_feats     = ['tiempo_esperado','llegada_lon','llegada_lat','hora_sin','hora_cos','runway_occupied','queue_length','time_since_free', 'hold_pt_occupied']
+categorical_feats = ['aircraft_type','holding_point']
 preprocessor = ColumnTransformer([
-    ('num', StandardScaler(), dnumeric),
-    ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), dcat)
+    ('num', StandardScaler(), numeric_feats),
+    ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical_feats)
 ])
 
-dnumeric = [c for c in feature_cols if c not in ['aircraft_type', 'holding_point']]
-dcat     = ['aircraft_type', 'holding_point']
-preprocessor = ColumnTransformer([
-    ('num', StandardScaler(), dnumeric),
-    ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), dcat)
-])
+X_train_proc = preprocessor.fit_transform(X_train)
+X_val_proc   = preprocessor.transform(X_val)
+X_test_proc  = preprocessor.transform(X_test)
 
-final_pipeline = Pipeline([
-    ('pre', preprocessor),
-    ('xgb', XGBRegressor(objective='reg:squarederror', random_state=42, max_depth=12, eta=0.0, eval_metric='mae'))
-])
+params = {
+    'objective':   'reg:squarederror',
+    'max_depth':   12,
+    'eta':         0.05,
+    'seed':        42,
+    'eval_metric': 'mae'
+}
 
-monitor = MonitorXGBOOST(modelo=final_pipeline, train=df_train, test=df_test, y='tiempo_espera', regresion=True, project='xgboost_PD2', name="modelo_final", entity='dacoleto-complutense-university-of-madrid')
+monitor = MonitorXGBOOST(params=params, train=X_train_proc, val=X_val_proc, test=X_test_proc, y='tiempo_espera', modelo=None, regresion=True, num_boost_round=2500, early_stopping_rounds=20, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid')
 monitor.evaluate()
 monitor.finish()
