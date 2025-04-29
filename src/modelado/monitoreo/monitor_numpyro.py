@@ -27,6 +27,7 @@ class MonitorNumpyro(MonitorGeneral):
         Visualiza las métricas en W&B.
         :param resultados_metricas: Resultados de las métricas
         :param metricas: Métricas a visualizar  
+<<<<<<< HEAD
         :param train: True si la tabla es para métricas de entrenamiento, False si es para métricas de test
         :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
         :param name: Nombre de la visualización de métricas
@@ -51,6 +52,15 @@ class MonitorNumpyro(MonitorGeneral):
                 )
             })
     
+=======
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param name: Nombre de la visualización de métricas
+        """
+        tabla_metricas = self.buildTableMetrics(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+        if groupby is not None:
+            self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
+
+>>>>>>> 7d3f9a6921142307df504c8b496615f001b80262
     def buildTableMetrics(self, resultados_metricas, metricas, groupby=None, name="metricas"):
         """
         Construye una tabla de métricas para registrar en W&B.
@@ -73,6 +83,43 @@ class MonitorNumpyro(MonitorGeneral):
         wandb.log({name: tabla_metricas})
         return tabla_metricas
 
+<<<<<<< HEAD
+=======
+    def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
+        """
+        Construye un grafico para cada métricay lo registra en W&B.
+        :param tabla_metricas: Tabla de métricas
+        :param groupby: Columna por la que agrupar los resultados (None si no se quiere agrupar)
+        :param metricas: Métricas a visualizar
+        :param name: Nombre de la visualización de métricas
+        """
+        for metrica in metricas:
+            wandb.log({
+                f"{name}_{metrica}": wandb.plot.bar(
+                    tabla_metricas, groupby, metrica, title=metrica
+                )
+            })
+
+
+
+    def buildTable(self, real_values, predictions, name="metricas"):
+        real_values = list(real_values)
+        predictions = list(predictions)
+        """
+        ind = real_values.index(43909.516)
+        real_values.pop(ind)
+        predictions.pop(ind)
+        """
+
+        tabla = wandb.Table(columns = ["valor_real", "prediccion"])
+        for i in range(len(real_values)):
+            tabla.add_data(real_values[i], predictions[i])
+        
+        wandb.log({name: tabla})
+        return tabla    
+    
+    
+>>>>>>> 7d3f9a6921142307df504c8b496615f001b80262
     def evaluate(self, groupby=None, name=None):
         """
         Ejecuta MCMC y evalúa el modelo.
@@ -127,8 +174,6 @@ from sklearn.preprocessing import StandardScaler,OneHotEncoder
 df = pd.read_parquet("./data/Train/train_final.parquet")
 # df = pd.read_parquet("../../../data/Train/datos_holding_with_runway.parquet")
 
-df
-
 import pandas as pd
 import numpy as np
 
@@ -177,15 +222,19 @@ def procesar_datos(df):
     return x, y, columnas_finales
 
 x, y, columnas_finales = procesar_datos(df)
+
 from sklearn.model_selection import train_test_split
 
 x_train, x_test, y_train, y_test = train_test_split(
     x, y, test_size=0.2, random_state=42
 )
+<<<<<<< HEAD
 
 print(x_train.shape)
 print(len(columnas_finales))
 
+=======
+>>>>>>> 7d3f9a6921142307df504c8b496615f001b80262
 x_train = pd.DataFrame(x_train, columns=columnas_finales)
 x_test = pd.DataFrame(x_test, columns=columnas_finales)
 
@@ -212,13 +261,13 @@ def modelo_regresion(x, y=None):
     numpyro.sample("obs", dist.LogNormal(mu, sigma), obs=y)
 
 
-monitor_numpyro = MonitorNumpyro(modelo_numpyro=modelo_regresion, train=pd.DataFrame(x_train, columnas_finales),test=pd.DataFrame(x_test, columns=["tiempo_espera"]),
+monitor_numpyro = MonitorNumpyro(modelo_numpyro=modelo_regresion, train=pd.DataFrame(x_train, columns=columnas_finales),test=pd.DataFrame(x_test, columns=columnas_finales),
     y="tiempo_espera",
     num_samples=1000,
     num_warmup=500,
     project='numpyro_project',
     name='modelo_numpyro',
-    entity='tu_entidad'
+    entity='dacoleto-complutense-university-of-madrid'
 )
 monitor_numpyro.evaluate(name="modelo_1")
 monitor_numpyro.finish()
