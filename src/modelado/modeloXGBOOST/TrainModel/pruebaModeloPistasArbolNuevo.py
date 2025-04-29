@@ -11,9 +11,9 @@ import joblib
 
 # 1) Carga y filtrado
 df_train = pd.read_parquet(
-    '/data/Train/train_final.parquet'
+    '../../../../data/Train/train_final.parquet'
 )
-df_test = pd.read_parquet('/data/Train/test_final.parquet')
+df_test = pd.read_parquet('../../../../data/Train/test_final.parquet')
 
 
 df_train = df_train[df_train['tiempo_espera'] <= 500]
@@ -171,7 +171,7 @@ df_final_test = df_final_test[target_cols]
 df_final_test.reset_index(drop=True, inplace=True)
 
 df_final_test.to_csv(
-    '../../../src/evaluacion/predicciones_xgb_with_queue_final.csv',
+    '../../../evaluacion/predicciones_xgb_with_queue_final_test.csv',
     index=False
 )
 print("Predicciones de test guardadas en 'predicciones_xgb_with_queue_gridSearch.csv'")
@@ -221,5 +221,5 @@ plt.tight_layout()
 plt.show()
 
 # 12) Guardar pipeline completo (el mejor modelo)
-joblib.dump(final_pipeline, 'pipeline_xgb.joblib')
+joblib.dump(final_pipeline, 'pipeline_xgb_test.joblib')
 print("Pipeline final (mejor modelo) guardado en 'pipeline_xgb_mejorado_final.joblib'")
