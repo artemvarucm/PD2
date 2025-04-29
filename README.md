@@ -61,7 +61,7 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
 `data`: contiene alguna documentación, junto con algunos problemas que pueden surgir.
         Se completa con la wiki del github.
 
-`src/evaluacion/`: contiene el dashboard `dashboard_tiempos_espera.py` para evaluación de modelos junto con los datos de predicciones, para evaluar solo hay que cambiar la ruta.
+`src/evaluacion/`: contiene el dashboard `dashboard_tiempos_espera.py` para evaluación de modelos junto con los datos de predicciones, para evaluar solo hay que cambiar la ruta. Se ejecuta con uv run dashboard_tiempos_espera.py
 
 `src/exploracion/entrega_1`: contiene notebooks de exploracion de la primera entrega
 
@@ -82,6 +82,10 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
 `src/visualization`: código de visualizaciones de datos de la primera entrega.
 
 `src/modelado/`: código usado para los diferentes modelos IA para predicciones.
+
+`src/modelado/tensorflow/modelado_con_sampleo_y_pistas_ocupadas.ipynb` : codigo usado para el modelo de tensorflow antes de tener los datos sampleados
+
+`src/modelado/tensorflow/pruebaModeloPistasTensorFlow.py`: codigo para entranar la red neuronal con los datos definitivos
 
 
 ### 🛠️ Para desarrolladores
