@@ -11,9 +11,9 @@ import joblib
 
 # 1) Carga y filtrado
 df_train = pd.read_parquet(
-    '/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/data/Train/train_final.parquet'
+    '/data/Train/train_final.parquet'
 )
-df_test = pd.read_parquet('/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/data/Train/test_final.parquet')
+df_test = pd.read_parquet('/data/Train/test_final.parquet')
 
 
 df_train = df_train[df_train['tiempo_espera'] <= 500]

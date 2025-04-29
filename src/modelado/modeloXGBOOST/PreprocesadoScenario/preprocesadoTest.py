@@ -23,8 +23,8 @@ import geopandas as gpd
 # -------------------------------
 # Parámetros de entrada/salida
 # -------------------------------
-INPUT_PATH  = "../../../data/scenarios/scenario_001.parquet"
-OUTPUT_PATH = "outputs/scenario1preprocessed.csv"
+INPUT_PATH  = "../../../../../data/scenarios/scenario_001.parquet"
+OUTPUT_PATH = "../outputs/scenario1preprocessed.csv"
 
 # ----------------------------
 # 1) CARGA Y PREPARACIÓN DEL DF
@@ -58,7 +58,7 @@ rwy18L36R = Polygon([(-3.564441,40.499172),(-3.549,40.499172),(-3.549,40.537472)
 rwy14L32R = Polygon([(-3.531683,40.464310),(-3.524645,40.468620),(-3.556317,40.498519),(-3.564652,40.495647)])
 rwy14R32L = Polygon([(-3.547648,40.450661),(-3.539580,40.454710),(-3.575714,40.488141),(-3.582924,40.484224)])
 # Leer holding points + buffer
-holding = gpd.read_file("../../../data/geojson/holding_points.geojson")
+holding = gpd.read_file("../../../../data/geojson/holding_points.geojson")
 hp_utm = holding.to_crs(epsg=32630)
 hp_utm['buffer50m'] = hp_utm.buffer(50)
 # Transformador coord

@@ -10,8 +10,8 @@ from sklearn.metrics import mean_absolute_error
 import joblib
 
 # 1) Carga
-df_train = pd.read_parquet('/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/data/Train/train_final.parquet')
-df_test = pd.read_parquet('/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/data/Train/test_final.parquet')
+df_train = pd.read_parquet('/data/Train/train_final.parquet')
+df_test = pd.read_parquet('/data/Train/test_final.parquet')
 
 print(df_train.columns)
 
