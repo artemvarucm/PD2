@@ -52,6 +52,7 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
 
 
 ### 💡 Estructura del proyecto
+
 `assets`: contiene el conjunto de recursos globales del
     proyecto imágenes, capturas, js usadas, como iconos.
 
@@ -101,8 +102,14 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
     - `src/modelado/sklearn/modelo_meteoreologico_puntos`: código experimental de modelos con agrupaciones por clusters de los puntos de espera, finalemnte desechados. Entrena el modelo y guarda los resultados de test.
     - `src/modelado/sklearn/modelo_meteoreologico`: código experimental con los primeros modelos y las primerras aproximaciones al modelo sklearn, finalmente desechados.
     - `src/modelado/sklearn/modelo_meteo_final`: código del modelo final, contiene el modelo con solo aviones parados, solo aviones en movimiento y el que se ha usado finalmente que contiene ambos. Entrena el modelo y guarda los resultados de las predicciones para cada uno de estos modelos.
-
-
+- `src/modelado/numpyro`: código de los modelos probabilísticos
+    - `src/modelado/numpyro/modelonumpyro_sin_parados.ipynb`: modelo de regresión lineal probabilística mediante numpyro sobre el problema original.
+    - `src/modelado/numpyro/modelonumpyro_estados.ipynb`: notebook que realiza el apartado a) y b) sobre el ejericio 3. Para ello se usa regresión logística bayesiana sobre numpyro.
+- `src/modelado/monitoreo`
+    - `src/modelado/monitoreo/monitor_general.py`: clase abstracta que sirve como estructura para las demás.
+    - `src/modelado/monitoreo/monitor_sklearn.py`: define una clase que permite conectar el modelo de sklearn fácilmente con wandb. En otras palabras, define un pipeline que permite meter únicamente un modelo y ya hace la evaluación sobre los datos y se obtienen las gráficas en wandb.
+    - `src/modelado/monitoreo/monitor_spark.py`: análogo para spark.
+    - `src/modelado/monitoreo/monitor_tensorflow.py`: análogo para tensorflow.
 
 
 ### 🛠️ Para desarrolladores
