@@ -61,7 +61,12 @@ class MonitorGeneral(ABC):
         Construye un gráfico de dispersión comparando los valores reales y las predicciones.
         Con outliers no funciona
         """
-        scatter_plot = wandb.plot.scatter(tabla_real_vs_predicciones, x="valor_real", y="prediccion", title="Real vs Predicción")
+        scatter_plot =  wandb.plot_table(
+            data_table=tabla_real_vs_predicciones,
+            vega_spec_name="dacoleto-complutense-university-of-madrid/dispersion",
+            fields={"x": "valor_real", "y": "prediccion"},
+            string_fields={"title": "Real vs Predicción"},
+        )
         wandb.log({"Real vs Predicción" : scatter_plot})
     
     def buildHistogram(self, real_values, predictions, bins=20):
