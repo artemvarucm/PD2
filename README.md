@@ -4,8 +4,9 @@
 
 ### INDICE
 - [🚀 Ejecutar el proyecto](#ejecutar-el-proyecto)
+    - [Entrega 1: Visualizaciones](#entrega-1:-visualizaciones)
+    - [Entrega 2: Modelos](#entrega-2:-modelos)
 - [💡 Estructura del proyecto](#estructura-del-proyecto)
-- [🗂️ Datos](#)
 - [🛠️ Para desarrolladores](#para-desarrolladores)
 <!--- [Estrategias](#)-->
 
@@ -28,7 +29,7 @@ $ source .venv/bin/activate
 ```
 **Ejecución del notebook seleccionando el entorno virtual .venv**
 
-**Ejecución dashboards interactivos**
+### Entrega 1: Visualizaciones
 Los dashboards se ejecutan desde el **directorio raíz**.
 ```bash
 $ uv run src/visualization/aire_tierra/dashboard.py
@@ -36,59 +37,53 @@ $ uv run src/visualization/despegues/dashboard.py
 $ uv run src/visualization/mapa/dashboard.py
 ```
 
+### Entrega 2: Modelos
+#### Procesado
+Hay que ajustar las rutas en cada archivo.
+```bash
+$ uv run src/procesado_datos/ml_1-preprocesado_masivos.py
+$ uv run src/procesado_datos/ml_2-concat.py
+$ uv run src/procesado_datos/ml_3-sampling.py
+$ uv run src/procesado_datos/ml_4-añade_columnas_extra.py
+$ uv run src/procesado_datos/ml_5-train_test_split.py
+```
+Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
+#### Modelos
+
+
 ### 💡 Estructura del proyecto
-```
-|- assets: contiene el conjunto de recursos globales del
-|    proyecto imágenes, capturas, js usadas, como iconos.
-|
-|- data: contiene los datos preprocesados, listos para usar.
-|    |
-|    |- ex1: datos de tiempos de espera y aviones en aire y tierra
-|    |- ex2: datos para la visualización del mapa
-|
-|- docs: contiene la documentación,
-|   junto con algunos problemas que pueden surgir.
-|
-|- mapas: guarda los .html las visualizaciones del mapa
-|
-|-  src: contiene todo el código, principalmente 
-|       archivos que sirven para transformar y visualizar los datos
-    |
-    |- exploracion: notebooks con análisis de los datos generados,
-    |   lo usamos para hacer pruebas antes de tomar
-    |   decisiones o sacar conclusiones sobre los resultados
-    |
-    |- utils: módulo para preprocesar más fácilmente,
-    |   las clases se usaron al inicio del desarrollo
-    |   y representan cada tipo de mensaje.
-    |
-    |- visualization: código de visualizaciones de datos.
-    |   |
-    |   |- carpetas (aire_tierra, despegues, mapa)
-    |       |- assets - carpeta con los archivos necesarios 
-    |       |   para la visualización, como estilos, imágenes...
-    |       |- dasboard.py - dashboard interactivo para 
-    |       |   el análisis de las gráficas
-    |       |- (notebook jupyter) - visualizaciones en el notebook
-    |       |   contiene comentarios con gráficas
-    |
-    |- main.py: archivo para iterar sobre los datos crudos,
-    |   donde cada fila representa características concretas,
-    |   y transformarlos en filas con todas las posibles características.
-    |   Hace uso de utils para el preprocesamiento.
-    |
-    |- procesado_aire_tierra.py: archivo para sacar los datos
-    |   de aviones en tierra y en aire.
-    |
-    |- procesado_mapa.py: archivo para sacar las posiciones
-    |   de los aviones para visualizarlo en el mapa.
-    |
-    |- procesado_tiempos_espera_1.py: archivo para la primera parte del 
-    |    procesado de tiempos de espera, se sacan las columnas necesarias.
-    |
-    |- procesado_tiempos_espera_2.py: archivo para la segunda parte del procesado
-    | de tiempos de espera, se filtran justo los momentos de espera y los despegues.
-```
+`assets`: contiene el conjunto de recursos globales del
+    proyecto imágenes, capturas, js usadas, como iconos.
+
+`docs`: contiene alguna documentación, junto con algunos problemas que pueden surgir.
+        Se completa con la wiki del github.
+
+`data`: contiene alguna documentación, junto con algunos problemas que pueden surgir.
+        Se completa con la wiki del github.
+
+`src/evaluacion/`: contiene el dashboard `dashboard_tiempos_espera.py` para evaluación de modelos junto con los datos de predicciones, para evaluar solo hay que cambiar la ruta.
+
+`src/exploracion/entrega_1`: contiene notebooks de exploracion de la primera entrega
+
+`src/exploracion/entrega_2`: contiene notebooks de exploracion de la segunda entrega.
+- `procesado_nuevo.ipynb`: es para analizar los datos SIN samplear.
+- `sampled.ipynb`: es para analizar los datos sampleados
+- `aeropuerto_geojsons.py`: es para visualizar los geojsons
+
+`src/procesado_datos/`: código que se usa para procesar y sacar los datos. 
+- Archivos que empiezan por `viz_` se utilizaban para los ejercicios de la entrega 1
+- Archivos que empiezan por `ml_`(ml_2-concat.py...) forman el pipeline del preprocesado de la entrega 2
+- Archivo `datos_meteo.py` (versión .py "limpia" del notebook `web_scraping_meteorologicos.ipynb``)
+
+`src/procesado_datos/codigo_cluster_cloudera`: directorio con el código para ejecutar el procesado en el cluster con Spark
+
+`src/procesado_datos/utils`: módulo para preprocesar más fácilmente, las clases se usaron al inicio del desarrollo y representan cada tipo de mensaje.
+
+`src/visualization`: código de visualizaciones de datos de la primera entrega.
+
+`src/modelado/`: código usado para los diferentes modelos IA para predicciones.
+
+
 ### 🛠️ Para desarrolladores
 #### Documentación consultada
 
