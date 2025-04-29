@@ -83,9 +83,9 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
 
 `src/modelado/`: código usado para los diferentes modelos IA para predicciones.
 
-`src/modelado/tensorflow/modelado_con_sampleo_y_pistas_ocupadas.ipynb` : codigo usado para el modelo de tensorflow antes de tener los datos sampleados
+`src/modelado/tensorflow/modelado_con_sampleo_y_pistas_ocupadas.ipynb` : código usado para el modelo de tensorflow antes de tener los datos sampleados
 
-`src/modelado/tensorflow/pruebaModeloPistasTensorFlow.py`: codigo para entranar la red neuronal con los datos definitivos
+`src/modelado/tensorflow/pruebaModeloPistasTensorFlow.py`: código para entranar la red neuronal con los datos definitivos
 
 
 ### 🛠️ Para desarrolladores
