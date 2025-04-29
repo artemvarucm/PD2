@@ -68,12 +68,12 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
 
 `src/evaluacion/`: contiene el dashboard `dashboard_tiempos_espera.py` para evaluación de modelos junto con los datos de predicciones, para evaluar solo hay que cambiar la ruta. Se ejecuta con uv run dashboard_tiempos_espera.py
 
-`src/exploracion/entrega_1`: contiene notebooks de exploracion de la primera entrega
-
-`src/exploracion/entrega_2`: contiene notebooks de exploracion de la segunda entrega.
-- `procesado_nuevo.ipynb`: es para analizar los datos SIN samplear.
-- `sampled.ipynb`: es para analizar los datos sampleados
-- `aeropuerto_geojsons.py`: es para visualizar los geojsons
+`src/exploracion`: contiene notebooks de exploracion
+- `src/exploracion/entrega_1`: contiene notebooks de exploracion de la primera entrega.
+- `src/exploracion/entrega_2`: contiene notebooks de exploracion de la segunda entrega.
+    - `procesado_nuevo.ipynb`: es para analizar los datos SIN samplear.
+    - `sampled.ipynb`: es para analizar los datos sampleados
+    - `aeropuerto_geojsons.py`: es para visualizar los geojsons
 
 `src/procesado_datos/`: código que se usa para procesar y sacar los datos. 
 - Archivos que empiezan por `viz_` se utilizaban para los ejercicios de la entrega 1
