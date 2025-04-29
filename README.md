@@ -86,7 +86,6 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
 
 `src/visualization`: código de visualizaciones de datos de la primera entrega.
 
-`src/modelado/`: código usado para los diferentes modelos IA para predicciones.
 
 `src/modelado`: código de todos los modelos
 - `src/modelado/tensorflow`: código tensorflow
@@ -96,11 +95,12 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
     - `src/modelado/modeloXGBOOST/TrainModel`: código del modelo, entrena el modelo y guarda los resultados de test.
     - `src/modelado/modeloXGBOOST/PredictTest`: código para predecir sobre el conjunto de test (mucho más rápido que ejcutar el modelo entero de nuevo).
     - `src/modelado/modeloXGBOOST/PreprocesadoScenario`: código para preprocesar los datos que llegan en un escenario.
-    - `src/modelado/modeloXGBOOST/PredictScenario`: código para predecir un ICAO concreto de un escenario.
-  `src/modelado/sklearn`
+    - `src/modelado/modeloXGBOOST/PredictScenario`: código para predecir un ICAO concreto de un escenario.  
+
+- `src/modelado/sklearn`
     - `src/modelado/sklearn/modelo_meteoreologico_puntos`: código experimental de modelos con agrupaciones por clusters de los puntos de espera, finalemnte desechados. Entrena el modelo y guarda los resultados de test.
-    - `src/modelado/modeloXGBOOST/modelo_meteoreologico`: código experimental con los primeros modelos y las primerras aproximaciones al modelo sklearn, finalmente desechados.
-    - `src/modelado/modeloXGBOOST/modelo_meteo_final`: código del modelo final, contiene el modelo con solo aviones parados, solo aviones en movimiento y el que se ha usado finalmente que contiene ambos.
+    - `src/modelado/sklearn/modelo_meteoreologico`: código experimental con los primeros modelos y las primerras aproximaciones al modelo sklearn, finalmente desechados.
+    - `src/modelado/sklearn/modelo_meteo_final`: código del modelo final, contiene el modelo con solo aviones parados, solo aviones en movimiento y el que se ha usado finalmente que contiene ambos. Entrena el modelo y guarda los resultados de las predicciones para cada uno de estos modelos.
 
 
 
