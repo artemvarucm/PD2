@@ -134,13 +134,29 @@ class MonitorXGBOOST(MonitorGeneral):
         if name is None:
             name = self.name
 
+        X_train = self.train.drop(columns=[self.y])
         y_train = self.train[self.y]
+        
+        X_val   = self.val.drop(columns=[self.y])
         y_val   = self.val[self.y]
-        y_test = self.test[self.y]  
+       
+        X_test  = self.test.drop(columns=[self.y])
+        y_test  = self.test[self.y]
 
-        dtrain = xgb.DMatrix(self.train, label=y_train)
-        dval   = xgb.DMatrix(self.val,   label=y_val)
-        dtest  = xgb.DMatrix(self.test,  label=y_test)
+        numeric_feats     = ['tiempo_esperado','llegada_lon','llegada_lat','hora_sin','hora_cos','runway_occupied','queue_length','time_since_free', 'hold_pt_occupied']
+        categorical_feats = ['aircraft_type','holding_point']
+        preprocessor = ColumnTransformer([
+            ('num', StandardScaler(), numeric_feats),
+            ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical_feats)
+        ])
+
+        X_train_proc = preprocessor.fit_transform(X_train)
+        X_val_proc   = preprocessor.transform(X_val)
+        X_test_proc  = preprocessor.transform(X_test)
+
+        dtrain = xgb.DMatrix(X_train_proc, label=y_train)
+        dval   = xgb.DMatrix(X_val_proc,   label=y_val)
+        dtest  = xgb.DMatrix(X_test_proc,  label=y_test)
         
         self.modelo = xgb.train(self.params, dtrain, num_boost_round=self.num_boost_round, evals=[(dtrain,'train'),(dval,'valid')], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=True)
 
@@ -256,6 +272,6 @@ params = {
     'eval_metric': 'mae'
 }
 
-monitor = MonitorXGBOOST(params=params, train=X_train_proc, val=X_val_proc, test=X_test_proc, y='tiempo_espera', modelo=None, regresion=True, num_boost_round=2500, early_stopping_rounds=20, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid')
+monitor = MonitorXGBOOST(params=params, train=df_train_main, val=df_val, test=df_test, y='tiempo_espera', modelo=None, regresion=True, num_boost_round=2500, early_stopping_rounds=20, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid')
 monitor.evaluate()
 monitor.finish()
