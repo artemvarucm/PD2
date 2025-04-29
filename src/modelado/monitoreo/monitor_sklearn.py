@@ -268,15 +268,7 @@ df_preprocesado_test["tiempo_espera"] = y_test_final
 
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
 
-monitor_sk = MonitorSklearn(
-    modelo=rf,
-    train=df_preprocesado,
-    test=df_preprocesado_test,
-    y="tiempo_espera",
-    regresion=True,
-    project='sklearn_PD2',
-    name="modelo_general",
-    entity='dacoleto-complutense-university-of-madrid'
+monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_general",entity='dacoleto-complutense-university-of-madrid'
 )
 
 monitor_sk.evaluate()
