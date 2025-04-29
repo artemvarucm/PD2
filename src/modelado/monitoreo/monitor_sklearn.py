@@ -3,9 +3,7 @@ import pandas as pd
 import wandb
 from sklearn.metrics import root_mean_squared_error, mean_squared_error, mean_absolute_error, r2_score, f1_score, accuracy_score
 from sklearn.model_selection import train_test_split
-import pickle
 from sklearn.linear_model import LinearRegression
-import os
 
 
 class MonitorSklearn(MonitorGeneral):
@@ -159,17 +157,6 @@ class MonitorSklearn(MonitorGeneral):
         
         self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_sklearn/{self.name}.pkl")
 
-    def saveModel(self, path):
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "wb") as m:
-            pickle.dump(self.modelo, m)
-        model_artifact = wandb.Artifact(name=self.name, type="model")
-        model_artifact.add_file(path)
-        wandb.log_artifact(model_artifact)
-
-    def setModel(self, model):
-        self.modelo = model
-
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -268,8 +255,7 @@ df_preprocesado_test["tiempo_espera"] = y_test_final
 
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
 
-monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_general",entity='dacoleto-complutense-university-of-madrid'
-)
+monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_general",entity='dacoleto-complutense-university-of-madrid')
 
 monitor_sk.evaluate()
 monitor_sk.finish()

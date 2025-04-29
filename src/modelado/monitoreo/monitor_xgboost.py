@@ -5,8 +5,6 @@ from sklearn.model_selection import train_test_split
 from wandb.plot.custom_chart import plot_table
 from sklearn.metrics import root_mean_squared_error, mean_squared_error, mean_absolute_error, r2_score, f1_score, accuracy_score
 from xgboost import XGBRegressor
-import os
-import pickle
 
 class MonitorXGBOOST(MonitorGeneral):
     METRICAS_REGRESION = ['rmse', 'mse', 'mae', 'r2']
@@ -181,24 +179,6 @@ class MonitorXGBOOST(MonitorGeneral):
 
         self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_xgboost/{self.name}.pkl")
 
-    def saveModel(self, path):
-        """
-        Guarda el modelo entrenado en un archivo.
-        :param path: Ruta del archivo donde guardar el modelo
-        """
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "wb") as m:
-            pickle.dump(self.modelo, m)
-        model_artifact = wandb.Artifact(name=self.name, type="model")
-        model_artifact.add_file(path)
-        wandb.log_artifact(model_artifact)
-
-    def setModel(self, model):
-        """
-        Establece un nuevo modelo.
-        :param model: Modelo a asignar
-        """
-        self.modelo = model
 
 
 import pandas as pd

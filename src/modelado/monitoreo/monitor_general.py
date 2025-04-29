@@ -1,5 +1,7 @@
 import wandb
 from abc import ABC, abstractmethod
+import os
+import pickle
 
 class MonitorGeneral(ABC):
     def __init__(self, modelo, train, test, y, project='pruebaPD2', name="modelo", entity='dacoleto-complutense-university-of-madrid'):
@@ -81,6 +83,18 @@ class MonitorGeneral(ABC):
             "Distribución de valores reales": wandb.plot_table(data_table=tabla_reales, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"]),
             "Distribución de predicciones": wandb.plot_table(data_table=tabla_predicciones, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])
         })
+    
+    
+    def saveModel(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as m:
+            pickle.dump(self.modelo, m)
+        model_artifact = wandb.Artifact(name=self.name, type="model")
+        model_artifact.add_file(path)
+        wandb.log_artifact(model_artifact)
+
+    def setModel(self, model):
+        self.modelo = model
 
     def finish(self):
         """Finaliza la sesión de W&B"""
