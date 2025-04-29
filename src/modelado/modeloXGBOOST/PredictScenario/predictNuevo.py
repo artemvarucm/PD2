@@ -16,8 +16,8 @@ from numpy import expm1
 # ----------------------------
 # 1) Ajusta rutas según tu entorno
 # ----------------------------
-FEATURES_CSV    = "outputs/features_ICAO_34324e.csv"       # CSV con features precomputadas
-PIPELINE_JOBLIB = "pipeline_xgb_mejorado.joblib"          # pipeline joblib (preprocessor + XGBRegressor)
+FEATURES_CSV    = "../outputs/features_ICAO_34324e.csv"       # CSV con features precomputadas
+PIPELINE_JOBLIB = "../TrainModel/pipeline_xgb.joblib"          # pipeline joblib (preprocessor + XGBRegressor)
 OUTPUT_CSV      = "predictions_manual.csv"                # CSV de salida con predicción
 # ----------------------------
 
