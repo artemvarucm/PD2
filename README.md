@@ -83,9 +83,19 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
 
 `src/modelado/`: código usado para los diferentes modelos IA para predicciones.
 
-`src/modelado/tensorflow/modelado_con_sampleo_y_pistas_ocupadas.ipynb` : código usado para el modelo de tensorflow antes de tener los datos sampleados
+`src/modelado/tensorflow/modelado_con_sampleo_y_pistas_ocupadas.ipynb` : código usado para el modelo de tensorflow antes de tener los datos sampleados.
 
-`src/modelado/tensorflow/pruebaModeloPistasTensorFlow.py`: código para entranar la red neuronal con los datos definitivos
+`src/modelado/tensorflow/pruebaModeloPistasTensorFlow.py`: código para entranar la red neuronal con los datos definitivos.
+
+`src/modelado/modeloXGBOOST/TrainModel`: código del modelo, entrena el modelo y guarda los resultados de test.
+
+`src/modelado/modeloXGBOOST/PredictTest`: código para predecir sobre el conjunto de test (mucho más rápido que ejcutar el modelo entero de nuevo).
+
+`src/modelado/modeloXGBOOST/PreprocesadoScenario`: código para preprocesar los datos que llegan en un escenario.
+
+`src/modelado/modeloXGBOOST/PredictScenario`: código para predecir un ICAO concreto de un escenario.
+
+
 
 
 ### 🛠️ Para desarrolladores
