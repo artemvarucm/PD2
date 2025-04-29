@@ -237,7 +237,7 @@ model = keras.Sequential([
 # Compilación
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002) 
 model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
-monitor_tf = MonitorTensorflow(modelo=model, train=df_train_proc, test=df_test_proc, y="tiempo_espera", num_epochs=1500, project='tf_PD2', name="modelo_final", entity='dacoleto-complutense-university-of-madrid')
+monitor_tf = MonitorTensorflow(modelo=model, train=df_train_proc, test=df_test_proc, y="tiempo_espera", num_epochs=1500, project='tf_PD2', name="tensorflow_modelo_final", entity='dacoleto-complutense-university-of-madrid')
 monitor_tf.evaluate()
 
 monitor_tf.finish()

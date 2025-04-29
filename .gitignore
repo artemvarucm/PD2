@@ -10,6 +10,7 @@ __pycache__/
 preprocessed/*
 
 # Distribution / packaging
+wandb/
 .Python
 build/
 develop-eggs/
