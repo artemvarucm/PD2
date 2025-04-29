@@ -153,9 +153,10 @@ class MonitorSklearn(MonitorGeneral):
 
             self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
         
-        #self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_sklearn/{self.name}.pkl")
+        self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_sklearn/{self.name}.pkl")
 
     def saveModel(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as m:
             pickle.dump(self.modelo, m)
         model_artifact = wandb.Artifact(name=self.name, type="model")
