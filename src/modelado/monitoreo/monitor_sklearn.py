@@ -131,8 +131,8 @@ class MonitorSklearn(MonitorGeneral):
         X = self.train.drop(columns=[self.y])
         y = self.train[self.y]
 
-        X = self.train.drop(columns=[self.y])
-        y = self.train[self.y]
+        X_test = self.train.drop(columns=[self.y])
+        y_test = self.train[self.y]
 
         self.modelo.fit(X, y)
 

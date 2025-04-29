@@ -14,7 +14,8 @@ class MonitorSpark(MonitorGeneral):
         """
         Inicializa el monitor para el modelo de machine learning.
         :param modelo: Modelo de machine learning a monitorizar
-        :param data: Conjunto de datos a evaluar
+        :param train: Datos de entrenamiento
+        :param test: Datos de prueba
         :param y: Variable objetivo
         :param regresion: True si el modelo es de regresión, False si es de clasificación
         :param spark_session: Sesión de Spark
@@ -29,7 +30,7 @@ class MonitorSpark(MonitorGeneral):
         self.pipeline = self.buildPipeline()
         
     def buildPipeline(self):
-        X = self.data.columns.copy()
+        X = self.train.columns.copy()
         X.remove(self.y)
         assembler = VectorAssembler( inputCols = X, outputCol ='X')
         scaler = StandardScaler(inputCol='X', outputCol='X_scaled')

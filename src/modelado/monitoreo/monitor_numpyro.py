@@ -130,6 +130,11 @@ from sklearn.model_selection import train_test_split
 x_train, x_test, y_train, y_test = train_test_split(
     x, y, test_size=0.2, random_state=42
 )
+x_train = pd.DataFrame(x_train, columnas_finales)
+x_test = pd.DataFrame(x_test, columnas_finales)
+
+x_train["tiempo_espera"] = y_train
+x_test["tiempo_espera"] = y_test
 
 import numpyro
 import numpyro.distributions as dist
@@ -150,10 +155,8 @@ def modelo_regresion(x, y=None):
     # Tiempo de espera ~ LogNormal(mu, sigma)
     numpyro.sample("obs", dist.LogNormal(mu, sigma), obs=y)
 
-monitor_numpyro = MonitorNumpyro(
-    modelo_numpyro=modelo_regresion,
-    train=pd.DataFrame(x_train, columnas_finales),
-    test=pd.DataFrame(x_test, columns=["tiempo_espera"]),
+
+monitor_numpyro = MonitorNumpyro(modelo_numpyro=modelo_regresion, train=pd.DataFrame(x_train, columnas_finales),test=pd.DataFrame(x_test, columns=["tiempo_espera"]),
     y="tiempo_espera",
     num_samples=1000,
     num_warmup=500,
