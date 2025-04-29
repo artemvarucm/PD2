@@ -12,18 +12,19 @@ class MonitorSklearn(MonitorGeneral):
     METRICAS_REGRESION = ['rmse', 'mse', 'mae', 'r2']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
-    def __init__(self, modelo, data, y, regresion=True, project='sklearn_PD2', name="modelo_sklearn", entity='dacoleto-complutense-university-of-madrid'):
+    def __init__(self, modelo, train, test, y, regresion=True, project='sklearn_PD2', name="modelo_sklearn", entity='dacoleto-complutense-university-of-madrid'):
         """
         Inicializa el monitor para modelos de scikit-learn
         :param modelo: Modelo de machine learning a monitorizar
-        :param data: Conjunto de datos a evaluar
+        :param train: Datos de entrenamiento
+        :param test: Datos de prueba
         :param y: Variable objetivo
         :param regresion: True si el modelo es de regresión, False si es de clasificación
         :param project: Nombre del proyecto en W&B
         :param name: Nombre del experimento
         :param entity: Nombre de la entidad en W&B
         """
-        super().__init__(modelo=modelo, data=data, y=y, project=project, name=name, entity=entity)
+        super().__init__(modelo=modelo, train=train, test=test, y=y, project=project, name=name, entity=entity)
         self.regresion = regresion
 
     def calculateMetrics(self, y_true, y_pred, metricas):
@@ -127,12 +128,15 @@ class MonitorSklearn(MonitorGeneral):
         if name is None:
             name = self.name
 
-        X = self.data.drop(columns=[self.y])
-        y = self.data[self.y]
+        X = self.train.drop(columns=[self.y])
+        y = self.train[self.y]
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_test = self.test
+        y_test = self.test[self.y]
 
-        self.modelo.fit(X_train, y_train)
+        self.modelo.fit(X, y)
+
+        # Predicción en test
         y_pred = self.modelo.predict(X_test)
 
         self.visualizeRealvsPrediccion(real_values=y_test, predictions=y_pred, name=name)
@@ -167,29 +171,112 @@ class MonitorSklearn(MonitorGeneral):
         self.modelo = model
 
 import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
 
-df = pd.read_csv("data/ex1/eventos_espera_semana_nuevo.csv")
-df = pd.get_dummies(df, columns=["aircraft_type", "runway", "holding_point"])
-import datetime
+# Cargar datos
+df = pd.read_parquet("data/Train/train_final.parquet")
+df_meteo = pd.read_csv("./data/datos_meteorologicos.csv", delimiter=",")
 
-# Asegúrate de que las columnas están en formato datetime
+# Conversión de fechas y tiempos
+df["llegada_punto"]  = pd.to_datetime(df["llegada_punto"])
+df["salida_punto"]   = pd.to_datetime(df["salida_punto"])
+df["despegue"]       = pd.to_datetime(df["despegue"])
+df["timestamp"]      = pd.to_datetime(df["timestamp"])
 df["fecha_despegue"] = pd.to_datetime(df["fecha_despegue"])
-df["ultimo_parado"] = pd.to_datetime(df["ultimo_parado"])
-df["despegue"] = pd.to_datetime(df["despegue"])
+df["Fecha"] = df["timestamp"].dt.date
+df["Hora"] = df["timestamp"].dt.hour
 
-# Convertir las fechas a segundos desde el 1 de enero de 1970
-df["fecha_despegue"] = (df["fecha_despegue"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
-df["ultimo_parado"] = (df["ultimo_parado"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
-df["despegue"] = (df["despegue"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
+# Conversión de columnas numéricas del meteo
+cols_numericas = [
+    "Precipitación", "Temperatura", "Humedad", "Viento", "Viento máximo",
+    "Temperatura mínima", "Temperatura máxima"
+]
+for col in cols_numericas:
+    df_meteo[col] = df_meteo[col].str.replace(",", ".").astype(float)
 
-df = df.drop(columns=["ICAO", "lat", "lon"])
+df_meteo["Fecha"] = pd.to_datetime(df_meteo["Fecha"]).dt.date
+df_meteo["Hora"] = pd.to_datetime(df_meteo["Hora"], format="%H:%M").dt.hour
 
-model = LinearRegression()
-"""
-monitor_sk = MonitorSklearn(modelo=model, data=df, y="tiempo_espera", regresion=True, project='sklearn_PD2', name="modelo_agrupado", entity='dacoleto-complutense-university-of-madrid')
-monitor_sk.evaluate(groupby="hora_despegue")
-"""
-monitor_sk = MonitorSklearn(modelo=model, data=df, y="tiempo_espera", regresion=True, project='sklearn_PD2', name="modelo_general", entity='dacoleto-complutense-university-of-madrid')
+# Merge de meteorología
+df_merged = df.merge(df_meteo, how="left", on=["Fecha", "Hora"])
+df_filtrado = df_merged[df_merged["tiempo_espera"] <= 500].copy()
+
+print(f"Registros antes de filtrar: {len(df_merged)}")
+print(f"Registros después de filtrar: {len(df_filtrado)}")
+
+# Features
+df_modelo = df_filtrado.drop(columns=[
+    "ICAO", "llegada_punto", "salida_punto", "salida_lon", "salida_lat", "despegue",
+    "runway", "fecha_despegue", "hora_despegue", "timestamp", "holding_point"
+])
+X = df_modelo.drop(columns=["tiempo_espera"])
+y = df_modelo["tiempo_espera"]
+
+# Columnas
+num_cols = X.select_dtypes(include=["int64", "float64"]).columns.tolist()
+cat_cols = X.select_dtypes(include=["object", "bool"]).columns.tolist()
+
+# Preprocesamiento manual
+preprocessor = ColumnTransformer([
+    ("num", StandardScaler(), num_cols),
+    ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_cols),
+])
+
+X_t = preprocessor.fit_transform(X)
+cat_feats = preprocessor.named_transformers_["cat"].get_feature_names_out(cat_cols).tolist()
+all_feats = num_cols + cat_feats
+
+df_preprocesado = pd.DataFrame(X_t, columns=all_feats, index=X.index)
+df_preprocesado["tiempo_espera"] = y
+
+
+
+# 1) Cargo test_final
+df_test = pd.read_parquet("C:/Users/jesus/Escritorio/Uni/PD2/PD2/data/Train/test_final.parquet")
+
+# 3) Creo Fecha y Hora para el merge con meteorología
+df["Fecha"] = df["timestamp"].dt.date
+df["Hora"]  = df["timestamp"].dt.hour
+
+# 4) Merge con df_meteo (ya procesado antes)
+df_test_merged = df.merge(df_meteo, on=["Fecha","Hora"], how="left")
+
+# 5) Filtrar outliers igual que en train
+df_test_filtrado = df_test_merged[df_test_merged["tiempo_espera"] <= 500].copy()
+
+# 6) Preparo X_test_final e y_test_final
+drop_cols = [
+    "ICAO","llegada_punto","salida_punto","despegue",
+    "runway","fecha_despegue","hora_despegue",
+    "timestamp","holding_point"
+]
+X_test_final = df_test_filtrado.drop(columns=drop_cols + ["tiempo_espera"])
+y_test_final = df_test_filtrado["tiempo_espera"]
+
+# 7) Predicción y MAE
+from sklearn.metrics import mean_absolute_error
+
+# 7a) Transformar X_test_final con el preprocessor entrenado
+X_test_t = preprocessor.transform(X_test_final)
+
+
+
+rf = RandomForestRegressor(n_estimators=100, random_state=42)
+
+monitor_sk = MonitorSklearn(
+    modelo=rf,
+    train=df_preprocesado,
+    test=X_test_t,
+    y="tiempo_espera",
+    regresion=True,
+    project='sklearn_PD2',
+    name="modelo_general",
+    entity='dacoleto-complutense-university-of-madrid'
+)
+
 monitor_sk.evaluate()
-
 monitor_sk.finish()

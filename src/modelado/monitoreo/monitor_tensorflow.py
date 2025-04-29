@@ -8,11 +8,12 @@ import numpy as np
 from wandb.plot.custom_chart import plot_table
 
 class MonitorTensorflow(MonitorGeneral):
-    def __init__(self, modelo, data, y, num_epochs, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid'):
+    def __init__(self, modelo, train, test, y, num_epochs, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid'):
         """
         Inicializa el monitor para el modelo de machine learning.
         :param modelo: Modelo de machine learning a monitorizar
-        :param data: Conjunto de datos a evaluar
+        :param train: DataFrame de entrenamiento
+        :param test: DataFrame de test
         :param y: Variable objetivo
         :param num_epochs: Número de épocas para el entrenamiento
         :param project: Nombre del proyecto en W&B
@@ -20,7 +21,7 @@ class MonitorTensorflow(MonitorGeneral):
         :param entity: Nombre de la entidad en W&B
         """
         self.num_epochs = num_epochs
-        super().__init__(modelo=modelo, data=data, y=y, project=project, name=name, entity=entity)
+        super().__init__(modelo=modelo, train=train, test=test, y=y, project=project, name=name, entity=entity)
     
     def visualizeMetrics(self, resultados_metricas, metricas, train=False, groupby=None, name="metricas"):
         """
@@ -112,14 +113,16 @@ class MonitorTensorflow(MonitorGeneral):
         wandb_metrics_logger = WandbMetricsLogger()
         wandb_model_checkpoint = WandbModelCheckpoint(f"./src/modelado/monitoreo/modelos/modelos_tensorflow/{name}/"+"{epoch:02d}.keras", monitor='val_loss')
 
-        X = self.data.drop(columns=[self.y])
-        y = self.data[self.y]
+        X = self.train.drop(columns=[self.y])
+        y = self.train[self.y]
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=42)
+        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.25, random_state=42)
 
         # Entrenar el modelo
         self.modelo.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=self.num_epochs, callbacks=[wandb_metrics_logger, wandb_model_checkpoint])
+
+        X_test = self.test.drop(columns=[self.y])
+        y_test = self.test[self.y]
 
         predicciones = self.modelo.predict(X_test).flatten()
         self.visualizeRealvsPrediccion(real_values=y_test, predictions=predicciones, name=name)
@@ -137,47 +140,104 @@ class MonitorTensorflow(MonitorGeneral):
                 test_results[valor_agrupar[0]] = self.modelo.evaluate(X_grupo_test, y_g_test, return_dict=True)
             
             self.visualizeMetrics(resultados_metricas=test_results, metricas=[m for m in list(self.modelo.history.history.keys()) if "val" not in m], groupby=groupby, name=name)    
-        
+
+
 import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.metrics import mean_absolute_error
 import tensorflow as tf
+from tensorflow import keras
 from tensorflow.keras import layers
+import joblib
+import matplotlib.pyplot as plt
+df_train = pd.read_parquet('./data/Train/train_final.parquet')
+df_test = pd.read_parquet('./data/Train/test_final.parquet')
+df_train = df_train.dropna().reset_index(drop=True)
+df_test = df_test.dropna().reset_index(drop=True)
+print(df_train.columns)
 
-df = pd.read_csv("data/ex1/eventos_espera_semana_nuevo.csv")
-df = pd.get_dummies(df, columns=["aircraft_type", "runway", "holding_point"])
-import datetime
+# 2) Filtrado
+#df = df[df['parado'] == True]
+df_train = df_train[df_train['tiempo_espera'] <= 500]
+df_test = df_test[df_test['tiempo_espera'] <= 500]
 
-# Asegúrate de que las columnas están en formato datetime
-df["fecha_despegue"] = pd.to_datetime(df["fecha_despegue"])
-df["ultimo_parado"] = pd.to_datetime(df["ultimo_parado"])
-df["despegue"] = pd.to_datetime(df["despegue"])
+# 3) Hora cíclica
+df_train['hora_decimal'] = df_train['timestamp'].dt.hour + df_train['timestamp'].dt.minute/60
+df_train['hora_sin']     = np.sin(2*np.pi * df_train['hora_decimal']/24)
+df_train['hora_cos']     = np.cos(2*np.pi * df_train['hora_decimal']/24)
 
-# Convertir las fechas a segundos desde el 1 de enero de 1970
-df["fecha_despegue"] = (df["fecha_despegue"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
-df["ultimo_parado"] = (df["ultimo_parado"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
-df["despegue"] = (df["despegue"] - datetime.datetime(1970, 1, 1)).dt.total_seconds()
+df_test['hora_decimal'] = df_test['timestamp'].dt.hour + df_test['timestamp'].dt.minute/60
+df_test['hora_sin']     = np.sin(2*np.pi * df_test['hora_decimal']/24)
+df_test['hora_cos']     = np.cos(2*np.pi * df_test['hora_decimal']/24)
 
-df = df.drop(columns=["ICAO", "lat", "lon"])
+# 4) X e y
+feature_cols = [
+    'tiempo_esperado', 'llegada_lon', 'llegada_lat',
+    'hora_sin', 'hora_cos',
+    'runway_occupied', 'queue_length', 'time_since_free',
+    'aircraft_type', 'holding_point'
+]
+X_train = df_train[feature_cols]
+y_train = df_train['tiempo_espera']
+X_test = df_test[feature_cols]
+y_test = df_test['tiempo_espera']
+
+# 5) Preprocesado
+numeric_feats     = ['tiempo_esperado','llegada_lon','llegada_lat','hora_sin','hora_cos','runway_occupied','queue_length','time_since_free']
+categorical_feats = ['aircraft_type','holding_point']
+preprocessor = ColumnTransformer([
+    ('num', StandardScaler(), numeric_feats),
+    ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical_feats)
+])
 
 
-import tensorflow as tf
+X_train_proc = preprocessor.fit_transform(X_train)
+X_test_proc  = preprocessor.transform(X_test)
 
-# Función para la métrica personalizada
-def custom_metric_lolaso(y_true, y_pred):
-    return tf.reduce_mean(tf.abs(y_true - y_pred)-tf.abs(y_true - y_pred))
+# Get feature names after fitting
+feature_names_out = preprocessor.get_feature_names_out()
+X_train_proc_df = pd.DataFrame(X_train_proc, index=X_train.index, columns=feature_names_out)
+X_test_proc_df = pd.DataFrame(X_test_proc, index=X_test.index, columns=feature_names_out)
 
-model = tf.keras.Sequential([
-    layers.Dense(64, activation='relu', input_shape=[len(df.drop(columns=["tiempo_espera"]).keys())]),
+df_train_proc = X_train_proc_df.copy()
+df_train_proc["tiempo_espera"] = y_train.values
+df_test_proc = X_test_proc_df.copy()
+df_test_proc["tiempo_espera"] = y_test.values
+
+# 6) Entrenar con TensorFlow
+# Early stopping
+early_stopping = tf.keras.callbacks.EarlyStopping(
+    monitor='val_loss',
+    patience=20,
+    restore_best_weights=True
+)
+
+lr_schedule = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor='val_loss', factor=0.5, patience=5, min_lr=0.0001
+)
+
+# Construcción del modelo
+model = keras.Sequential([
+    layers.Dense(256, activation='relu', input_shape=(X_train_proc.shape[1],)),
+    layers.BatchNormalization(),
+    layers.Dense(128, activation='relu'),
+    layers.BatchNormalization(),
+    layers.Dense(64, activation='relu'),
+    layers.BatchNormalization(),
+    layers.Dense(32, activation='relu'),
+    layers.BatchNormalization(),
+    layers.Dense(16, activation='relu'),
+    layers.BatchNormalization(),
     layers.Dense(1)
 ])
-model.compile(optimizer='adam',
-              loss='mse',
-              metrics=["mae", "mse", "msle", "cosine_similarity", custom_metric_lolaso])
 
-"""
-monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=5, project='tf_PD2', name="modelo_tf", entity='dacoleto-complutense-university-of-madrid')
-monitor_tf.evaluate(groupby="hora_despegue")
-"""
-monitor_tf = MonitorTensorflow(modelo=model, data=df, y="tiempo_espera", num_epochs=2, project='tf_PD2', name="modelo_general5", entity='dacoleto-complutense-university-of-madrid')
+# Compilación
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002) 
+model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
+monitor_tf = MonitorTensorflow(modelo=model, train=df_train_proc, test=df_test_proc, y="tiempo_espera", num_epochs=1500, project='tf_PD2', name="modelo_final", entity='dacoleto-complutense-university-of-madrid')
 monitor_tf.evaluate()
 
 monitor_tf.finish()

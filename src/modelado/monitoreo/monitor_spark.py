@@ -10,7 +10,7 @@ class MonitorSpark(MonitorGeneral):
     METRICAS_REGRESION = ['rmse', 'mse', 'mae']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
-    def __init__(self, modelo, data, y, spark_session, regresion, project='spark_PD2', name="modelo_spark", entity='dacoleto-complutense-university-of-madrid'):
+    def __init__(self, modelo, train, test, y, spark_session, regresion, project='spark_PD2', name="modelo_spark", entity='dacoleto-complutense-university-of-madrid'):
         """
         Inicializa el monitor para el modelo de machine learning.
         :param modelo: Modelo de machine learning a monitorizar
@@ -22,7 +22,7 @@ class MonitorSpark(MonitorGeneral):
         :param name: Nombre del experimento
         :param entity: Nombre de la entidad en W&B
         """
-        super().__init__(modelo=modelo, data=data, y=y, project=project, name=name, entity=entity)
+        super().__init__(modelo=modelo, train=train, test=test, y=y, project=project, name=name, entity=entity)
         self.spark_session = spark_session
         self.regression = regresion
         self.modelo.setFeaturesCol("X_scaled")
@@ -135,7 +135,7 @@ class MonitorSpark(MonitorGeneral):
             name = self.name
 
         # Dividir los datos en entrenamiento y prueba
-        train_data, test_data = self.data.randomSplit([0.8, 0.2], seed=7)
+        train_data, test_data = self.train, self.test
 
         # Entrenar el modelo
         self.pipeline_model = self.pipeline.fit(train_data)
