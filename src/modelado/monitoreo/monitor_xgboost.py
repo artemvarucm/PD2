@@ -230,39 +230,11 @@ df_test['hora_decimal'] = df_test['timestamp'].dt.hour + df_test['timestamp'].dt
 df_test['hora_sin']     = np.sin(2*np.pi * df_test['hora_decimal']/24)
 df_test['hora_cos']     = np.cos(2*np.pi * df_test['hora_decimal']/24)
 
-df_train_main, df_val = train_test_split(
+df_train, df_val = train_test_split(
     df_train,
     test_size=0.2,
     random_state=42
 )
-
-# 4) X e y
-feature_cols = [
-    'tiempo_esperado', 'llegada_lon', 'llegada_lat',
-    'hora_sin', 'hora_cos',
-    'runway_occupied', 'queue_length', 'time_since_free',
-    'aircraft_type', 'holding_point', 'hold_pt_occupied'
-]
-X_train = df_train_main[feature_cols]
-y_train = df_train_main['tiempo_espera']
-
-X_val = df_val[feature_cols]
-y_val = df_val['tiempo_espera']
-
-X_test = df_test[feature_cols]
-y_test = df_test['tiempo_espera']
-
-# 5) Preprocesado
-numeric_feats     = ['tiempo_esperado','llegada_lon','llegada_lat','hora_sin','hora_cos','runway_occupied','queue_length','time_since_free', 'hold_pt_occupied']
-categorical_feats = ['aircraft_type','holding_point']
-preprocessor = ColumnTransformer([
-    ('num', StandardScaler(), numeric_feats),
-    ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical_feats)
-])
-
-X_train_proc = preprocessor.fit_transform(X_train)
-X_val_proc   = preprocessor.transform(X_val)
-X_test_proc  = preprocessor.transform(X_test)
 
 params = {
     'objective':   'reg:squarederror',
@@ -272,6 +244,6 @@ params = {
     'eval_metric': 'mae'
 }
 
-monitor = MonitorXGBOOST(params=params, train=df_train_main, val=df_val, test=df_test, y='tiempo_espera', modelo=None, regresion=True, num_boost_round=2500, early_stopping_rounds=20, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid')
+monitor = MonitorXGBOOST(params=params, train=df_train, val=df_val, test=df_test, y='tiempo_espera', modelo=None, regresion=True, num_boost_round=2500, early_stopping_rounds=20, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid')
 monitor.evaluate()
 monitor.finish()
