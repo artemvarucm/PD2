@@ -206,13 +206,11 @@ data = indexer_runway_model.transform(data)
 
 data = data.drop("aircraft_type", "holding_point", "runway")
 
+train, test = data.randomSplit([0.8, 0.2], seed=42)
 # Definir el modelo de regresión lineal
 lr = LinearRegression(featuresCol='lol', labelCol='tiempo_espera', maxIter=100, regParam=0.1)
 
-monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_por_hora")
-monitor_spark.evaluate(groupby="hora_despegue")
-"""
-monitor_spark = MonitorSpark(modelo=lr, data=data, y='tiempo_espera', spark_session=spark, regresion=True, name="metricas_sin_agrupar")
+monitor_spark = MonitorSpark(modelo=lr, train=train, test=test, y='tiempo_espera', spark_session=spark, regresion=True, name="modelo_1")
 monitor_spark.evaluate()
-"""
+
 monitor_spark.finish()

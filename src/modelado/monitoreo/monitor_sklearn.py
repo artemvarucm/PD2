@@ -131,8 +131,8 @@ class MonitorSklearn(MonitorGeneral):
         X = self.train.drop(columns=[self.y])
         y = self.train[self.y]
 
-        X_test = self.test
-        y_test = self.test[self.y]
+        X = self.train.drop(columns=[self.y])
+        y = self.train[self.y]
 
         self.modelo.fit(X, y)
 
@@ -236,7 +236,7 @@ df_preprocesado["tiempo_espera"] = y
 
 
 # 1) Cargo test_final
-df_test = pd.read_parquet("C:/Users/jesus/Escritorio/Uni/PD2/PD2/data/Train/test_final.parquet")
+df_test = pd.read_parquet("./data/Train/test_final.parquet")
 
 # 3) Creo Fecha y Hora para el merge con meteorología
 df["Fecha"] = df["timestamp"].dt.date
@@ -263,14 +263,15 @@ from sklearn.metrics import mean_absolute_error
 # 7a) Transformar X_test_final con el preprocessor entrenado
 X_test_t = preprocessor.transform(X_test_final)
 
-
+df_preprocesado_test = pd.DataFrame(X_test_t, columns=all_feats, index=X_test_final.index)
+df_preprocesado_test["tiempo_espera"] = y_test_final
 
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
 
 monitor_sk = MonitorSklearn(
     modelo=rf,
     train=df_preprocesado,
-    test=X_test_t,
+    test=df_preprocesado_test,
     y="tiempo_espera",
     regresion=True,
     project='sklearn_PD2',
