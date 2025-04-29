@@ -60,6 +60,11 @@ Todos estos archivos funcionan en un pipeline que sacan 2 archivos: train y test
 
 `data`: contiene alguna documentación, junto con algunos problemas que pueden surgir.
         Se completa con la wiki del github.
+- `ex1`: entrega 1
+- `ex2`: entrega 2
+- `geojson`: archivos geojsons
+- `scenarios`: archivos de escenarios
+- `Train`: archivos utilizados en train/test 
 
 `src/evaluacion/`: contiene el dashboard `dashboard_tiempos_espera.py` para evaluación de modelos junto con los datos de predicciones, para evaluar solo hay que cambiar la ruta. Se ejecuta con uv run dashboard_tiempos_espera.py
 
