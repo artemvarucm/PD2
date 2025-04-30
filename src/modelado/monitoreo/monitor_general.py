@@ -56,7 +56,7 @@ class MonitorGeneral(ABC):
         """
         tabla = self.buildTable(real_values=real_values, predictions=predictions, name=name)
         self.buildScatter(tabla_real_vs_predicciones=tabla)
-        self.buildHistogram(real_values=real_values, predictions=predictions)
+        #self.buildHistogram(real_values=real_values, predictions=predictions)
     
     def buildScatter(self, tabla_real_vs_predicciones):
         """

@@ -129,12 +129,11 @@ class MonitorSklearn(MonitorGeneral):
         X = self.train.drop(columns=[self.y])
         y = self.train[self.y]
 
-        X_test = self.train.drop(columns=[self.y])
-        y_test = self.train[self.y]
+        X_test = self.test.drop(columns=[self.y])
+        y_test = self.test[self.y]
 
         self.modelo.fit(X, y)
 
-        # Predicción en test
         y_pred = self.modelo.predict(X_test)
 
         self.visualizeRealvsPrediccion(real_values=y_test, predictions=y_pred, name=name)

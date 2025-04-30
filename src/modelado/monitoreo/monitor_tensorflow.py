@@ -118,11 +118,11 @@ class MonitorTensorflow(MonitorGeneral):
 
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.25, random_state=42)
 
-        # Entrenar el modelo
-        self.modelo.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=self.num_epochs, callbacks=[wandb_metrics_logger, wandb_model_checkpoint])
-
         X_test = self.test.drop(columns=[self.y])
         y_test = self.test[self.y]
+
+        self.modelo.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=self.num_epochs, callbacks=[wandb_metrics_logger, wandb_model_checkpoint])
+
 
         predicciones = self.modelo.predict(X_test).flatten()
         self.visualizeRealvsPrediccion(real_values=y_test, predictions=predicciones, name=name)
