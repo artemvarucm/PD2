@@ -84,6 +84,19 @@ class MonitorGeneral(ABC):
             "Distribución de predicciones": wandb.plot_table(data_table=tabla_predicciones, vega_spec_name="dacoleto-complutense-university-of-madrid/histgood", fields=["valor"])
         })
     
+    def buildPlotBar(self, resultados_metricas, metricas):
+        tabla = wandb.Table(columns=["metrica", "valor"])
+        for m in metricas:
+            tabla.add_data(m, resultados_metricas[m])
+
+        bar_plot = wandb.plot.bar(
+            tabla,
+            "metrica",  
+            "valor",        
+            title="metricas modelo"
+        )
+        wandb.log({"metricas modelo": bar_plot})
+
     
     def saveModel(self, path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -93,6 +106,21 @@ class MonitorGeneral(ABC):
         model_artifact.add_file(path)
         wandb.log_artifact(model_artifact)
 
+    def saveData(self, path, train, test):
+        artifact = wandb.Artifact(name="conjuntos_de_datos", type="dataset")
+
+        os.makedirs(path, exist_ok=True)
+
+        train_path = os.path.join(path, "train.parquet")
+        train.to_parquet(train_path)
+        artifact.add_file(train_path)
+
+        test_path = os.path.join(path, "test.parquet")
+        test.to_parquet(test_path)
+        artifact.add_file(test_path)
+
+        wandb.log_artifact(artifact)
+        
     def setModel(self, model):
         self.modelo = model
 

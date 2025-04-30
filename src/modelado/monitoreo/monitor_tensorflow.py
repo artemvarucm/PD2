@@ -33,7 +33,7 @@ class MonitorTensorflow(MonitorGeneral):
         :param name: Nombre de la visualización de métricas
         """                  
         tabla_metricas = self.buildTableMetrics(resultados_metricas, metricas=metricas, train=train, groupby=groupby, name=name)
-        
+        self.buildPlotBar(resultados_metricas=resultados_metricas, metricas=metricas)
         if groupby is not None: 
             self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
 
@@ -85,7 +85,7 @@ class MonitorTensorflow(MonitorGeneral):
             wandb.log({name: tabla_metricas})
             if groupby is not None and not train:
                 return tabla_metricas
-
+    
     def buildTable(self, real_values, predictions, name="metricas"):
         real_values = list(real_values)
         predictions = list(predictions)
@@ -141,6 +141,7 @@ class MonitorTensorflow(MonitorGeneral):
             
             self.visualizeMetrics(resultados_metricas=test_results, metricas=[m for m in list(self.modelo.history.history.keys()) if "val" not in m], groupby=groupby, name=name)    
 
+        self.saveData(path=f"./src/modelado/monitoreo/datasets/tensorflow/{self.name}", train=self.train, test=self.test)
 
 import pandas as pd
 import numpy as np
@@ -237,7 +238,7 @@ model = keras.Sequential([
 # Compilación
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002) 
 model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
-monitor_tf = MonitorTensorflow(modelo=model, train=df_train_proc, test=df_test_proc, y="tiempo_espera", num_epochs=1500, project='tf_PD2', name="tensorflow_modelo_final", entity='dacoleto-complutense-university-of-madrid')
+monitor_tf = MonitorTensorflow(modelo=model, train=df_train_proc, test=df_test_proc, y="tiempo_espera", num_epochs=2, project='tf_PD2', name="tensorflow_2_sin_out", entity='dacoleto-complutense-university-of-madrid')
 monitor_tf.evaluate()
 
 monitor_tf.finish()

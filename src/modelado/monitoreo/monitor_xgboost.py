@@ -7,7 +7,7 @@ from sklearn.metrics import root_mean_squared_error, mean_squared_error, mean_ab
 from xgboost import XGBRegressor
 
 class MonitorXGBOOST(MonitorGeneral):
-    METRICAS_REGRESION = ['rmse', 'mse', 'mae', 'r2']
+    ETRICAS_REGRESION = ['mse', 'mae']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
     def __init__(self, params, train, val, test, y,  modelo=None, regresion=True, num_boost_round=2500, early_stopping_rounds=20, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid'):
@@ -66,6 +66,7 @@ class MonitorXGBOOST(MonitorGeneral):
         :param name: Nombre de la visualización de métricas
         """
         tabla_metricas = self.buildTableMetrics(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+        self.buildPlotBar(resultados_metricas=resultados_metricas, metricas=metricas)
         if groupby is not None:
             self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
 
@@ -177,7 +178,8 @@ class MonitorXGBOOST(MonitorGeneral):
 
             self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
 
-        self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_xgboost/{self.name}.pkl")
+        self.saveData(path=f"./src/modelado/monitoreo/datasets/xgboost/{self.name}", train=self.train, test=self.test)
+        self.saveModel(path=f"./src/modelado/monitoreo/modelos/xgboost/{self.name}.pkl")
 
 
 

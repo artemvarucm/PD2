@@ -7,7 +7,7 @@ import wandb
 import os
 
 class MonitorSpark(MonitorGeneral):
-    METRICAS_REGRESION = ['rmse', 'mse', 'mae']
+    ETRICAS_REGRESION = ['mse', 'mae']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
     def __init__(self, modelo, train, test, y, spark_session, regresion, project='spark_PD2', name="modelo_spark", entity='dacoleto-complutense-university-of-madrid'):
@@ -47,7 +47,8 @@ class MonitorSpark(MonitorGeneral):
         """
                                 
         tabla_metricas = self.buildTableMetrics(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
-        
+        self.buildPlotBar(resultados_metricas=resultados_metricas, metricas=metricas)
+
         if groupby is not None: 
             self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
 

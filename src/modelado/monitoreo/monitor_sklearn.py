@@ -59,9 +59,11 @@ class MonitorSklearn(MonitorGeneral):
         :param name: Nombre de la visualización de métricas
         """
         tabla_metricas = self.buildTableMetrics(resultados_metricas, metricas=metricas, groupby=groupby, name=name)
+        self.buildPlotBar(resultados_metricas=resultados_metricas, metricas=metricas)
+        
         if groupby is not None:
             self.buildGraph(tabla_metricas=tabla_metricas, groupby=groupby, metricas=metricas, name=name)
-
+    
     def buildTableMetrics(self, resultados_metricas, metricas, groupby=None, name="metricas"):
         """
         Construye una tabla de métricas para registrar en W&B.
@@ -81,7 +83,7 @@ class MonitorSklearn(MonitorGeneral):
             fila = [resultados_metricas[m] for m in metricas]
             tabla_metricas.add_data(*fila)
 
-        wandb.log({name: tabla_metricas})
+        wandb.log({"metricas": tabla_metricas})
         return tabla_metricas
 
     def buildGraph(self, tabla_metricas, groupby, metricas, name="metricas"):
@@ -98,7 +100,6 @@ class MonitorSklearn(MonitorGeneral):
                     tabla_metricas, groupby, metrica, title=metrica
                 )
             })
-
 
 
     def buildTable(self, real_values, predictions, name="metricas"):
@@ -137,7 +138,7 @@ class MonitorSklearn(MonitorGeneral):
         y_pred = self.modelo.predict(X_test)
 
         self.visualizeRealvsPrediccion(real_values=y_test, predictions=y_pred, name=name)
-
+        
         metricas = self.METRICAS_REGRESION if self.regresion else self.METRICAS_CLASIFICACION
         resultados_metricas = self.calculateMetrics(y_true=y_test, y_pred=y_pred, metricas=metricas)
 
@@ -154,7 +155,8 @@ class MonitorSklearn(MonitorGeneral):
 
             self.visualizeMetrics(resultados_metricas=resultados_metricas, metricas=metricas, groupby=groupby, name=name)
         
-        self.saveModel(path=f"./src/modelado/monitoreo/modelos/modelos_sklearn/{self.name}.pkl")
+        self.saveData(path=f"./src/modelado/monitoreo/datasets/sklearn/{self.name}", train=self.train, test=self.test)
+        self.saveModel(path=f"./src/modelado/monitoreo/modelos/sklearn/{self.name}.pkl")
 
 import pandas as pd
 import numpy as np
@@ -252,9 +254,9 @@ X_test_t = preprocessor.transform(X_test_final)
 df_preprocesado_test = pd.DataFrame(X_test_t, columns=all_feats, index=X_test_final.index)
 df_preprocesado_test["tiempo_espera"] = y_test_final
 
-rf = RandomForestRegressor(n_estimators=100, random_state=42)
+rf = RandomForestRegressor(n_estimators=3, random_state=42)
 
-monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_general",entity='dacoleto-complutense-university-of-madrid')
+monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_3_sin_out",entity='dacoleto-complutense-university-of-madrid')
 
 monitor_sk.evaluate()
 monitor_sk.finish()
