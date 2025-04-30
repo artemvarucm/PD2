@@ -227,11 +227,11 @@ df_preprocesado["tiempo_espera"] = y
 df_test = pd.read_parquet("./data/Train/test_final.parquet")
 
 # 3) Creo Fecha y Hora para el merge con meteorología
-df["Fecha"] = df["timestamp"].dt.date
-df["Hora"]  = df["timestamp"].dt.hour
+df_test["Fecha"] = df_test["timestamp"].dt.date
+df_test["Hora"]  = df_test["timestamp"].dt.hour
 
 # 4) Merge con df_meteo (ya procesado antes)
-df_test_merged = df.merge(df_meteo, on=["Fecha","Hora"], how="left")
+df_test_merged = df_test.merge(df_meteo, on=["Fecha","Hora"], how="left")
 
 # 5) Filtrar outliers igual que en train
 df_test_filtrado = df_test_merged[df_test_merged["tiempo_espera"] <= 500].copy()
@@ -254,9 +254,9 @@ X_test_t = preprocessor.transform(X_test_final)
 df_preprocesado_test = pd.DataFrame(X_test_t, columns=all_feats, index=X_test_final.index)
 df_preprocesado_test["tiempo_espera"] = y_test_final
 
-rf = RandomForestRegressor(n_estimators=500, random_state=42)
+rf = RandomForestRegressor(n_estimators=200, random_state=42)
 
-monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_500_sin_outl",entity='dacoleto-complutense-university-of-madrid')
+monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_200_sin_outl",entity='dacoleto-complutense-university-of-madrid')
 
 monitor_sk.evaluate()
 monitor_sk.finish()
