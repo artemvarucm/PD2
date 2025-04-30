@@ -7,7 +7,7 @@ from sklearn.metrics import root_mean_squared_error, mean_squared_error, mean_ab
 from xgboost import XGBRegressor
 
 class MonitorXGBOOST(MonitorGeneral):
-    ETRICAS_REGRESION = ['mse', 'mae']
+    METRICAS_REGRESION = ['mae']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
     def __init__(self, params, train, val, test, y,  modelo=None, regresion=True, num_boost_round=2500, early_stopping_rounds=20, project='xgboost_PD2', name="modelo_xboost", entity='dacoleto-complutense-university-of-madrid'):

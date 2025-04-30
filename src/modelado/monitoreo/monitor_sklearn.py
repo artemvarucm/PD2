@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 
 
 class MonitorSklearn(MonitorGeneral):
-    METRICAS_REGRESION = ['mse', 'mae']
+    METRICAS_REGRESION = ['mae']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
     def __init__(self, modelo, train, test, y, regresion=True, project='sklearn_PD2', name="modelo_sklearn", entity='dacoleto-complutense-university-of-madrid'):
@@ -254,9 +254,9 @@ X_test_t = preprocessor.transform(X_test_final)
 df_preprocesado_test = pd.DataFrame(X_test_t, columns=all_feats, index=X_test_final.index)
 df_preprocesado_test["tiempo_espera"] = y_test_final
 
-rf = RandomForestRegressor(n_estimators=3, random_state=42)
+rf = RandomForestRegressor(n_estimators=500, random_state=42)
 
-monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_3_sin_out",entity='dacoleto-complutense-university-of-madrid')
+monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_500_sin_outl",entity='dacoleto-complutense-university-of-madrid')
 
 monitor_sk.evaluate()
 monitor_sk.finish()
