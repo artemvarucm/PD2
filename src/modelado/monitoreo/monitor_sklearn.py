@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 
 
 class MonitorSklearn(MonitorGeneral):
-    METRICAS_REGRESION = ['rmse', 'mse', 'mae', 'r2']
+    METRICAS_REGRESION = ['mse', 'mae']
     METRICAS_CLASIFICACION = ['accuracy', 'f1']
 
     def __init__(self, modelo, train, test, y, regresion=True, project='sklearn_PD2', name="modelo_sklearn", entity='dacoleto-complutense-university-of-madrid'):
