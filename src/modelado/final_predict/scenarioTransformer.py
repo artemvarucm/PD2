@@ -75,6 +75,79 @@ def find_runway(lon, lat):
     else:
         return None
 
+"""
+Función para sacar runway_occupied, queue_length y time_since_free
+
+Parameters
+----------
+row : fila del DataFrame
+runway_intervals : dicccionario que guarda por cada pista, tiene la lista ordenada de intervalos de tiempo cuando estaba ocupada
+runway_despegues : dicccionario que guarda por cada pista, tiene la lista ordenada de los despegues
+"""
+def get_queue_features(row, runway_intervals, runway_despegues):
+    runway = row['runway']
+    current_ts       = row['timestamp']
+    intervals = runway_intervals.get(runway)
+    desps     = runway_despegues.get(runway)
+
+    if intervals is None or desps is None:
+        return pd.Series({
+            'runway_occupied':  0,
+            'queue_length':     0,
+            'time_since_free':  np.nan
+        })
+
+    contains = intervals.contains(current_ts) # devuelve boolean por cada intervalo, vale True si contiene el número
+    # pueden haber varios aviones que están en la pista o han salido de su punto de espera 
+    # (por lo de punto de "preespera" y "postespera")
+    queue_length    = int(contains.sum())
+
+    idx = desps.searchsorted(current_ts) # devuelve el índice donde tendrías que insertar el elemento
+    if idx == 0:
+        time_since_free = np.nan # no hay ningún despegue
+    else:
+        last_departure = desps[idx-1] # el último despegue más cercano a current_ts
+        time_since_free = (current_ts - last_departure).total_seconds()
+
+    return pd.Series({
+        'runway_occupied':  int(queue_length > 0),
+        'queue_length':     queue_length,
+        'time_since_free':  time_since_free
+    })
+
+"""
+Para sacar la variable hold_pt_occupied
+
+Parameters
+----------
+row : fila del DataFrame
+holding_intervals : dicccionario que guarda por cada pista, tiene la lista ordenada de intervalos de tiempo cuando estaba ocupada
+"""
+def get_hold_pt_occupied(row, holding_intervals):
+    runway = row['runway']
+    current_ts = row['timestamp']
+    runway_to_holding = {
+        '14L/32R': ['K1', 'K2', 'K3'],
+        '14R/32L': ['L1', 'LA', 'LB', 'LC', 'LE'],
+        '18L/36R': ['Y1', 'Y2', 'Y3'],
+        '18R/36L': ['Z1', 'Z2', 'Z3', 'Z4', 'Z6']
+    }
+
+
+    count = 0
+    for hold_pt in runway_to_holding[runway]:
+        if hold_pt != row['holding_point']:
+            intervals = holding_intervals.get(hold_pt)
+            if intervals:
+                contains = intervals.contains(current_ts) # devuelve boolean por cada intervalo, vale True si contiene el número
+                if contains.any():
+                    count += 1
+
+    return pd.Series({
+        'hold_pt_occupied': count,
+    })
+
+
 def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
     """
     Para un grupo de mensajes (un mismo ICAO) ordenados cronológicamente,
@@ -177,7 +250,7 @@ def segmentar_vuelos(grupo: pd.DataFrame) -> pd.DataFrame:
 
     return pd.DataFrame(eventos)
 
-def get_preprocessed_scenario(inputPath):
+def get_preprocessed_scenario(inputPath, avion_a_predecir):
     df = pd.read_parquet(inputPath)
     # Renombrar columnas
     df = df.rename(columns={
@@ -191,11 +264,54 @@ def get_preprocessed_scenario(inputPath):
         'ts': 'ts_kafka'
     })
     df['timestamp'] = pd.to_datetime(df['ts_kafka'], unit='ms')
+
+    CURRENT_TS = df['timestamp'].max() # será el tiempo actual, se asume que el avion a predecir está parado todavía
+    
     eventos_espera = df.groupby("ICAO").apply(segmentar_vuelos)
 
     eventos_espera["fecha_despegue"] = eventos_espera["despegue"].dt.date
     eventos_espera["hora_despegue"] = eventos_espera["despegue"].dt.hour
-    #print(eventos_espera.head(5))
+
+    ### 2da parte, variables adicionales
+    despegue_predecir = eventos_espera[
+        (eventos_espera.ICAO == avion_a_predecir["icao"]) &
+        (eventos_espera.holding_point == avion_a_predecir["holding_point"]) &
+        (eventos_espera.runway == avion_a_predecir["runway"])
+    ]
+
+    if despegue_predecir.empty:
+        return None
+        
+    despegue_predecir["timestamp"] = CURRENT_TS
+    despegue_predecir["tiempo_esperado"] = (CURRENT_TS - despegue_predecir["llegada_punto"].values[0]).total_seconds()
+
+    # Diccionarios por pista
+    runway_intervals = {}
+    runway_despegues = {}
+    for runway, group in eventos_espera.groupby('runway'):
+        # intervalos de ocupación completos
+        runway_intervals[runway] = pd.IntervalIndex.from_arrays(
+            group['salida_punto'].fillna(CURRENT_TS),
+            group['despegue'].fillna(CURRENT_TS),
+            closed='both'
+        )
+        # datetimes ordenados de despegue
+        runway_despegues[runway] = pd.DatetimeIndex(group['despegue']).sort_values()
     
-    return eventos_espera
+    # lo mismo, pero para la ocupación de puntos de espera
+    holding_intervals = {}
+    for hold_pt, group in eventos_espera.groupby('holding_point'):
+        holding_intervals[hold_pt] = pd.IntervalIndex.from_arrays(
+            group['llegada_punto'],
+            group['salida_punto'].fillna(CURRENT_TS),
+            closed='both'
+        )
+
+    despegue_predecir[['runway_occupied','queue_length','time_since_free']] = despegue_predecir.apply(
+        lambda row: get_queue_features(row, runway_intervals, runway_despegues), axis=1)
+    
+    despegue_predecir[['hold_pt_occupied']] = despegue_predecir.apply(
+        lambda row: get_hold_pt_occupied(row, holding_intervals), axis=1)
+    
+    return despegue_predecir.reset_index(drop=True)
     
