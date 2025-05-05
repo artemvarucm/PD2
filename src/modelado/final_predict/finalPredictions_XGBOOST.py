@@ -8,11 +8,25 @@ import numpy as np
 from numpy import expm1
 
 
-PIPELINE_JOBLIB = "../modeloXGBOOST/TrainModel/pipeline_xgb.joblib"
+PIPELINE_JOBLIB = "./src/modelado/modeloXGBOOST/TrainModel/pipeline_xgb.joblib"
 OUTPUT_CSV      = "predictions_manual.csv"
-scenariosPath = '/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/data/final_scenarios'
+scenariosPath = './data/final_scenarios'
 df_casos = pd.read_csv(Path(scenariosPath, 'answers_empty.csv'))
 
+# 3) Cargar pipeline y extraer preprocesador + modelo
+try:
+    pipeline = joblib.load(PIPELINE_JOBLIB)
+    preprocessor = pipeline.named_steps['pre']
+    model = pipeline.named_steps['xgb']
+except Exception as e:
+    print(f"ERROR: No se pudo cargar pipeline {PIPELINE_JOBLIB}: {e}", file=sys.stderr)
+    sys.exit(1)
+
+# 4) Extraer scaler y OHE del preprocesador
+scaler = preprocessor.named_transformers_['num']
+ohe = preprocessor.named_transformers_['cat']
+numeric_feats = list(scaler.feature_names_in_)
+categorical_feats = ohe.feature_names_in_
 
 for idx, row in df_casos.iterrows():
     processed = get_preprocessed_scenario(Path(scenariosPath, row['scenario_name']), row)
@@ -31,21 +45,6 @@ for idx, row in df_casos.iterrows():
         processed['is_weekend'] = processed['weekday'].isin([5, 6]).astype(int)
         # Interacción simple
         processed['queue_x_runway'] = processed['queue_length'] * processed['runway_occupied']
-
-        # 3) Cargar pipeline y extraer preprocesador + modelo
-        try:
-            pipeline = joblib.load(PIPELINE_JOBLIB)
-            preprocessor = pipeline.named_steps['pre']
-            model = pipeline.named_steps['xgb']
-        except Exception as e:
-            print(f"ERROR: No se pudo cargar pipeline {PIPELINE_JOBLIB}: {e}", file=sys.stderr)
-            sys.exit(1)
-
-        # 4) Extraer scaler y OHE del preprocesador
-        scaler = preprocessor.named_transformers_['num']
-        ohe = preprocessor.named_transformers_['cat']
-        numeric_feats = list(scaler.feature_names_in_)
-        categorical_feats = ohe.feature_names_in_
 
         # 5) Transformación numérica
         try:
