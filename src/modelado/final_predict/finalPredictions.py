@@ -1,11 +1,15 @@
 import pandas as pd
+from pathlib import Path
+from scenarioTransformer import get_preprocessed_scenario
 
-df_casos = pd.read_csv('./data/final_scenarios/answers_empty.csv')
+scenariosPath = './data/final_scenarios/'
+df_casos = pd.read_csv(Path(scenariosPath, 'answers_empty.csv'))
 
 modelo = ...
 
 for idx, row in df_casos.iterrows():
-    despegues_sampleados = 0
+    despegues_sampleados = get_preprocessed_scenario(Path(scenariosPath, row['scenario_name']))
+    #exit(1)
     despegue_predecir = despegues_sampleados[
         (despegues_sampleados.ICAO == row["icao"]) &
         (despegues_sampleados.holding_point == row["holding_point"]) &
