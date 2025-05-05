@@ -3,6 +3,7 @@ import pandas as pd
 from shapely.geometry import Point, Polygon
 from pyproj import Transformer
 import geopandas as gpd
+import numpy as np
 
 GS_THR = 80 # limite de velocidad cuando va a despegar
 
@@ -23,7 +24,7 @@ rwy_polygon_14R_32L = Polygon([
 ])
 
 # Cargar el geojson de holding points (en CRS WGS84)
-holding_points = gpd.read_file("data/geojson/holding_points.geojson")
+holding_points = gpd.read_file("/Users/alewar/Documents/Universidad/Tercero/PD2/PD2/data/geojson/holding_points.geojson")
 
 # Reproyectar a un CRS métrico (por ejemplo, UTM 30N; usa el EPSG adecuado para tu zona)
 holding_points_utm = holding_points.to_crs(epsg=32630)
@@ -138,10 +139,11 @@ def get_hold_pt_occupied(row, holding_intervals):
     for hold_pt in runway_to_holding[runway]:
         if hold_pt != row['holding_point']:
             intervals = holding_intervals.get(hold_pt)
-            if intervals:
-                contains = intervals.contains(current_ts) # devuelve boolean por cada intervalo, vale True si contiene el número
-                if contains.any():
-                    count += 1
+            if intervals is None or intervals.empty:
+                continue
+            contains = intervals.contains(current_ts) # devuelve boolean por cada intervalo, vale True si contiene el número
+            if contains.any():
+                count += 1
 
     return pd.Series({
         'hold_pt_occupied': count,
@@ -268,6 +270,8 @@ def get_preprocessed_scenario(inputPath, avion_a_predecir):
     CURRENT_TS = df['timestamp'].max() # será el tiempo actual, se asume que el avion a predecir está parado todavía
     
     eventos_espera = df.groupby("ICAO").apply(segmentar_vuelos)
+
+    eventos_espera["despegue"] = pd.to_datetime(eventos_espera["despegue"])
 
     eventos_espera["fecha_despegue"] = eventos_espera["despegue"].dt.date
     eventos_espera["hora_despegue"] = eventos_espera["despegue"].dt.hour
