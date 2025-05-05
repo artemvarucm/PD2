@@ -291,13 +291,13 @@ def get_preprocessed_scenario(inputPath, avion_a_predecir):
     for runway, group in eventos_espera.groupby('runway'):
         # intervalos de ocupación completos
         runway_intervals[runway] = pd.IntervalIndex.from_arrays(
-            group['salida_punto'].fillna(CURRENT_TS),
-            group['despegue'].fillna(CURRENT_TS),
+            group['salida_punto'],
+            group['despegue'],
             closed='both'
         )
         # datetimes ordenados de despegue
-        runway_despegues[runway] = pd.DatetimeIndex(group['despegue']).sort_values()
-    
+        runway_despegues[runway] = pd.DatetimeIndex(group['despegue'].dropna()).sort_values()
+
     # lo mismo, pero para la ocupación de puntos de espera
     holding_intervals = {}
     for hold_pt, group in eventos_espera.groupby('holding_point'):
