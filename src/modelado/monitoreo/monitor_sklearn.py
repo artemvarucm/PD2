@@ -234,7 +234,8 @@ df_test["Hora"]  = df_test["timestamp"].dt.hour
 df_test_merged = df_test.merge(df_meteo, on=["Fecha","Hora"], how="left")
 
 # 5) Filtrar outliers igual que en train
-df_test_filtrado = df_test_merged[df_test_merged["tiempo_espera"] <= 500].copy()
+#df_test_filtrado = df_test_merged[df_test_merged["tiempo_espera"] <= 500].copy()
+df_test_filtrado = df_test_merged.copy()
 
 # 6) Preparo X_test_final e y_test_final
 drop_cols = [
@@ -256,7 +257,11 @@ df_preprocesado_test["tiempo_espera"] = y_test_final
 
 rf = RandomForestRegressor(n_estimators=200, random_state=42)
 
-monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_200_sin_outl",entity='dacoleto-complutense-university-of-madrid')
+monitor_sk = MonitorSklearn(modelo=rf,train=df_preprocesado,test=df_preprocesado_test, y="tiempo_espera",regresion=True,project='sklearn_PD2',name="modelo_200_con_outl",entity='dacoleto-complutense-university-of-madrid')
+
+print("Acabado el monitoreo")
 
 monitor_sk.evaluate()
-monitor_sk.finish()
+
+print("Acabado la evaluación")
+#monitor_sk.finish()
