@@ -278,6 +278,15 @@ def get_preprocessed_scenario(inputPath, avion_a_predecir):
     eventos_espera["fecha_despegue"] = eventos_espera["despegue"].dt.date
     eventos_espera["hora_despegue"] = eventos_espera["despegue"].dt.hour
 
+    # si no se conoce el runway, se establece el runway por defecto para el punto
+    holding_to_runway = {
+        'K1':'14L/32R','K2':'14L/32R','K3':'14L/32R',
+        'L1':'14R/32L','LA':'14R/32L','LB':'14R/32L','LC':'14R/32L','LE':'14R/32L',
+        'Y1':'18L/36R','Y2':'18L/36R','Y3':'18L/36R',
+        'Z1':'18R/36L','Z2':'18R/36L','Z3':'18R/36L','Z4':'18R/36L','Z6':'18R/36L'
+    }
+    correct_runway = eventos_espera['holding_point'].map(holding_to_runway)
+    eventos_espera['runway'] = eventos_espera['runway'].fillna(correct_runway)
     ### 2da parte, variables adicionales
     despegue_predecir = eventos_espera[
         (eventos_espera.ICAO == avion_a_predecir["icao"]) &
